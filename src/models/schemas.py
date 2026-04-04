@@ -18,7 +18,8 @@ class RepoData(BaseModel):
         name: Repository full name in "owner/repo" format.
         url: Repository HTML URL.
         stars: Total star count (non-negative).
-        star_velocity: Normalized 30-day star growth rate in [-1.0, 1.0].
+        star_velocity: 30-day star growth rate normalized as (stars_last_30d / total_stars),
+            clamped to [-1.0, 1.0]. Negative values indicate net unfollows.
         commits: Commit count in the last 30 days.
         contributors: Unique contributor count.
         issues: Open issue count.
@@ -29,7 +30,11 @@ class RepoData(BaseModel):
     name: str
     url: HttpUrl
     stars: int = Field(ge=0)
-    star_velocity: float = Field(ge=-1.0, le=1.0)
+    star_velocity: float = Field(
+        ge=-1.0,
+        le=1.0,
+        description="stars_last_30d / total_stars, clamped to [-1.0, 1.0]",
+    )
     commits: int = Field(ge=0)
     contributors: int = Field(ge=0)
     issues: int = Field(ge=0)
