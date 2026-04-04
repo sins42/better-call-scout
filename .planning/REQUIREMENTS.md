@@ -7,11 +7,11 @@
 
 ### Data Schema (Shared -- Day 1)
 
-- [ ] **SCHEMA-01**: Pydantic model for repo data (name, url, stars, star_velocity, commits, contributors, issues, topics, language)
-- [ ] **SCHEMA-02**: Pydantic model for news item (title, url, source, score, content, published_at)
-- [ ] **SCHEMA-03**: Pydantic model for RAG context chunk (text, source, metadata)
-- [ ] **SCHEMA-04**: Pydantic model for analyst hypothesis (persona, confidence_score, evidence, counter_evidence, reasoning, hypothesis_text)
-- [ ] **SCHEMA-05**: Pydantic model for synthesis report (query, hypotheses, top_repos, generated_at)
+- [x] **SCHEMA-01**: Pydantic model for repo data (name, url, stars, star_velocity, commits, contributors, issues, topics, language)
+- [x] **SCHEMA-02**: Pydantic model for news item (title, url, source, score, content, published_at)
+- [x] **SCHEMA-03**: Pydantic model for RAG context chunk (text, source, metadata)
+- [x] **SCHEMA-04**: Pydantic model for analyst hypothesis (persona, confidence_score, evidence, counter_evidence, reasoning, hypothesis_text)
+- [x] **SCHEMA-05**: Pydantic model for synthesis report (query, hypotheses, top_repos, generated_at)
 
 ### Collection Layer (Person 1: Raghav)
 
