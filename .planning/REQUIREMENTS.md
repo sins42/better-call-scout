@@ -1,11 +1,11 @@
 # Requirements: Better Call Scout
 
 **Defined:** 2026-04-03
-**Core Value:** A single query produces a structured, evidence-backed hypothesis about what's about to boom in tech — with VC, developer, and journalist perspectives in one report.
+**Core Value:** A single query produces a structured, evidence-backed hypothesis about what's about to boom in tech -- with VC, developer, and journalist perspectives in one report.
 
 ## v1 Requirements
 
-### Data Schema (Shared — Day 1)
+### Data Schema (Shared -- Day 1)
 
 - [ ] **SCHEMA-01**: Pydantic model for repo data (name, url, stars, star_velocity, commits, contributors, issues, topics, language)
 - [ ] **SCHEMA-02**: Pydantic model for news item (title, url, source, score, content, published_at)
@@ -20,7 +20,7 @@
 - [ ] **COLL-03**: GitHub Agent fetches commit activity, contributor stats, issue velocity per repo
 - [ ] **COLL-04**: HN + Tavily Agent fetches top/best HN stories via Firebase API
 - [ ] **COLL-05**: HN + Tavily Agent fetches founder bios, funding news, job postings via Tavily
-- [ ] **COLL-06**: RAG ingestion pipeline: fetch HN stories + RSS → chunk → embed with MiniLM → store in ChromaDB
+- [ ] **COLL-06**: RAG ingestion pipeline: fetch HN stories + RSS -> chunk -> embed with MiniLM -> store in ChromaDB
 - [ ] **COLL-07**: RAG Agent queries ChromaDB and returns relevant context chunks for a given topic
 - [ ] **COLL-08**: All 3 collection agents run in parallel via ADK
 - [ ] **COLL-09**: Critic Agent filters raw repo list (removes forks, boilerplate, one-day spikes, spam)
@@ -31,7 +31,7 @@
 - [ ] **ANAL-02**: Developer Analyst Agent scores repos on ecosystem maturity, adoption phase, job posting signals, historical benchmarking
 - [ ] **ANAL-03**: Journalist Analyst Agent scores repos on narrative hook, HN sentiment/buzz, media coverage density, incumbent comparison
 - [ ] **ANAL-04**: All 3 analyst agents run in parallel via ADK
-- [ ] **ANAL-05**: Generator-Critic loop wired per analyst (analyst → critic challenge → analyst refine → commit, max 2 iterations)
+- [ ] **ANAL-05**: Generator-Critic loop wired per analyst (analyst -> critic challenge -> analyst refine -> commit, max 2 iterations)
 - [ ] **ANAL-06**: Each analyst emits typed hypothesis JSON conforming to SCHEMA-04
 
 ### Synthesis & Output (Person 2: Sindhuja)
@@ -42,10 +42,10 @@
 
 ### Visualizations (Person 2: Sindhuja)
 
-- [ ] **VIZ-01**: Star velocity line chart — top 10 repos, stars/week over 4-8 weeks
-- [ ] **VIZ-02**: Category heatmap — tech categories × weeks, color = star velocity
-- [ ] **VIZ-03**: HN Buzz vs GitHub Stars scatter — X=stars, Y=HN score
-- [ ] **VIZ-04**: Persona score bar chart — side-by-side VC/Dev/Journalist scores per repo
+- [ ] **VIZ-01**: Star velocity line chart -- top 10 repos, stars/week over 4-8 weeks
+- [ ] **VIZ-02**: Category heatmap -- tech categories x weeks, color = star velocity
+- [ ] **VIZ-03**: HN Buzz vs GitHub Stars scatter -- X=stars, Y=HN score
+- [ ] **VIZ-04**: Persona score bar chart -- side-by-side VC/Dev/Journalist scores per repo
 - [ ] **VIZ-05**: All 4 charts downloadable as PNG
 
 ### Frontend (Person 2: Sindhuja)
@@ -59,7 +59,7 @@
 
 ### Orchestration (Shared)
 
-- [ ] **ORCH-01**: ADK top-level orchestrator wires Collection → Critic → Analysis → Synthesis flow
+- [ ] **ORCH-01**: ADK top-level orchestrator wires Collection -> Critic -> Analysis -> Synthesis flow
 - [ ] **ORCH-02**: Collection layer runs in parallel (3 agents concurrent)
 - [ ] **ORCH-03**: Analysis layer runs in parallel (3 analyst agents concurrent)
 
@@ -108,10 +108,10 @@
 | DEPLOY-01 through DEPLOY-04 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 37 total
-- Mapped to phases: 37
-- Unmapped: 0 ✓
+- v1 requirements: 41 total
+- Mapped to phases: 41
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-03*
-*Last updated: 2026-04-03 after initialization*
+*Last updated: 2026-04-03 after roadmap creation*
