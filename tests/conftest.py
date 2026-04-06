@@ -104,6 +104,7 @@ def mock_session_state(mock_repos, mock_news, mock_rag_chunks) -> dict:
         "dev_critic_output": "",
         "journalist_draft_output": "",
         "journalist_critic_output": "",
+        "query": "AI dev tools about to break out",
     }
 
 
@@ -146,4 +147,17 @@ def mock_journalist_hypothesis() -> AnalystHypothesis:
         ],
         reasoning="HN community validated RAG use case early. Traditional media catching up. Real story is enterprise race.",
         hypothesis_text="The real story isn't LangChain — it's why Microsoft's Semantic Kernel is being ignored by the press.",
+    )
+
+
+from src.models.schemas import SynthesisReport
+
+
+@pytest.fixture
+def mock_synthesis_report(mock_repos, mock_vc_hypothesis, mock_dev_hypothesis, mock_journalist_hypothesis) -> SynthesisReport:
+    """Complete SynthesisReport built from mock fixtures for visualization tests."""
+    return SynthesisReport(
+        query="AI dev tools about to break out",
+        hypotheses=[mock_vc_hypothesis, mock_dev_hypothesis, mock_journalist_hypothesis],
+        top_repos=mock_repos,
     )
