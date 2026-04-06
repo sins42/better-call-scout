@@ -510,3 +510,201 @@ class TestHnTavilyAgentInstance:
         from src.agents.collection.hn_tavily_agent import hn_tavily_agent
 
         assert hn_tavily_agent.output_key == "hn_tavily_results"
+
+
+# ---------------------------------------------------------------------------
+# RAG Ingestion Tests
+# ---------------------------------------------------------------------------
+
+
+class TestGetChromaCollection:
+    """Tests for get_chroma_collection."""
+
+    def test_get_chroma_collection_returns_collection(self):
+        """get_chroma_collection returns a ChromaDB collection with SentenceTransformerEmbeddingFunction."""
+        mock_collection = MagicMock()
+        mock_client = MagicMock()
+        mock_client.get_or_create_collection.return_value = mock_collection
+        mock_embedding_fn = MagicMock()
+
+        with patch("chromadb.PersistentClient", return_value=mock_client):
+            with patch(
+                "chromadb.utils.embedding_functions.SentenceTransformerEmbeddingFunction",
+                return_value=mock_embedding_fn,
+            ):
+                from src.rag.ingestion import get_chroma_collection
+
+                result = get_chroma_collection()
+
+        assert result is mock_collection
+        mock_client.get_or_create_collection.assert_called_once()
+
+
+class TestChunkText:
+    """Tests for chunk_text."""
+
+    def test_chunk_text_returns_list_of_strings(self):
+        """chunk_text returns a list of non-empty string chunks."""
+        from src.rag.ingestion import chunk_text
+
+        text = "a" * 1200
+        chunks = chunk_text(text, chunk_size=500, overlap=50)
+        assert isinstance(chunks, list)
+        assert all(isinstance(c, str) for c in chunks)
+        assert all(len(c) > 0 for c in chunks)
+
+    def test_chunk_text_respects_chunk_size(self):
+        """chunk_text produces chunks no larger than chunk_size."""
+        from src.rag.ingestion import chunk_text
+
+        text = "x" * 2000
+        chunks = chunk_text(text, chunk_size=500, overlap=50)
+        assert all(len(c) <= 500 for c in chunks)
+
+    def test_chunk_text_short_text_returns_single_chunk(self):
+        """chunk_text returns a single chunk for text shorter than chunk_size."""
+        from src.rag.ingestion import chunk_text
+
+        text = "short text"
+        chunks = chunk_text(text, chunk_size=500, overlap=50)
+        assert len(chunks) == 1
+        assert chunks[0] == text
+
+    def test_chunk_text_empty_string_returns_empty_list(self):
+        """chunk_text returns empty list for empty string."""
+        from src.rag.ingestion import chunk_text
+
+        chunks = chunk_text("", chunk_size=500, overlap=50)
+        assert chunks == []
+
+
+class TestIngestHnStories:
+    """Tests for ingest_hn_stories."""
+
+    def test_ingest_hn_stories_calls_chroma_add(self):
+        """ingest_hn_stories fetches HN stories and adds documents to ChromaDB."""
+        mock_collection = MagicMock()
+        mock_collection.add = MagicMock()
+        mock_client = MagicMock()
+        mock_client.get_or_create_collection.return_value = mock_collection
+
+        top_stories_response = MagicMock()
+        top_stories_response.json.return_value = [1, 2]
+        top_stories_response.raise_for_status = MagicMock()
+
+        story_response = MagicMock()
+        story_response.json.return_value = {
+            "id": 1,
+            "type": "story",
+            "title": "Test Story",
+            "url": "https://example.com/story",
+            "text": "Some story text content here.",
+            "time": 1700000000,
+        }
+        story_response.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "topstories" in url:
+                return top_stories_response
+            return story_response
+
+        with patch("chromadb.PersistentClient", return_value=mock_client):
+            with patch(
+                "chromadb.utils.embedding_functions.SentenceTransformerEmbeddingFunction"
+            ):
+                with patch("requests.get", side_effect=mock_get):
+                    from src.rag.ingestion import ingest_hn_stories
+
+                    count = asyncio.run(ingest_hn_stories(limit=2))
+
+        assert isinstance(count, int)
+        assert count >= 0
+        mock_collection.add.assert_called()
+
+    def test_ingest_hn_stories_uses_deterministic_ids(self):
+        """ingest_hn_stories uses hashlib.sha256 for deterministic document IDs."""
+        import inspect
+        import src.rag.ingestion as module
+
+        source = inspect.getsource(module)
+        assert "hashlib.sha256" in source
+
+
+# ---------------------------------------------------------------------------
+# RAG Retrieval Tests
+# ---------------------------------------------------------------------------
+
+
+class TestQueryCorpus:
+    """Tests for query_corpus."""
+
+    def test_query_corpus_returns_list_of_dicts(self):
+        """query_corpus returns a list of dicts with text, source, metadata keys."""
+        mock_collection = MagicMock()
+        mock_collection.query.return_value = {
+            "documents": [["chunk text 1", "chunk text 2"]],
+            "ids": [["id1", "id2"]],
+            "metadatas": [[{"source_type": "hackernews"}, {"source_type": "hackernews"}]],
+        }
+        mock_client = MagicMock()
+        mock_client.get_or_create_collection.return_value = mock_collection
+
+        with patch("chromadb.PersistentClient", return_value=mock_client):
+            with patch(
+                "chromadb.utils.embedding_functions.SentenceTransformerEmbeddingFunction"
+            ):
+                from src.rag.retrieval import query_corpus
+
+                results = query_corpus("machine learning", n_results=5)
+
+        assert isinstance(results, list)
+        assert len(results) == 2
+        for r in results:
+            assert "text" in r
+            assert "source" in r
+            assert "metadata" in r
+
+    def test_query_corpus_empty_collection_returns_empty_list(self):
+        """query_corpus handles empty collection gracefully."""
+        mock_collection = MagicMock()
+        mock_collection.query.return_value = {
+            "documents": [[]],
+            "ids": [[]],
+            "metadatas": [[]],
+        }
+        mock_client = MagicMock()
+        mock_client.get_or_create_collection.return_value = mock_collection
+
+        with patch("chromadb.PersistentClient", return_value=mock_client):
+            with patch(
+                "chromadb.utils.embedding_functions.SentenceTransformerEmbeddingFunction"
+            ):
+                from src.rag.retrieval import query_corpus
+
+                results = query_corpus("machine learning", n_results=5)
+
+        assert results == []
+
+    def test_async_query_corpus_returns_same_shape(self):
+        """async_query_corpus wraps query_corpus and returns same shape."""
+        mock_collection = MagicMock()
+        mock_collection.query.return_value = {
+            "documents": [["text chunk"]],
+            "ids": [["doc-id-1"]],
+            "metadatas": [[{"source_type": "hackernews"}]],
+        }
+        mock_client = MagicMock()
+        mock_client.get_or_create_collection.return_value = mock_collection
+
+        with patch("chromadb.PersistentClient", return_value=mock_client):
+            with patch(
+                "chromadb.utils.embedding_functions.SentenceTransformerEmbeddingFunction"
+            ):
+                from src.rag.retrieval import async_query_corpus
+
+                results = asyncio.run(async_query_corpus("AI tools", n_results=3))
+
+        assert isinstance(results, list)
+        assert len(results) == 1
+        assert results[0]["text"] == "text chunk"
+        assert results[0]["source"] == "doc-id-1"
