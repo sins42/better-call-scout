@@ -15,11 +15,11 @@
 
 ### Collection Layer (Person 1: Raghav)
 
-- [ ] **COLL-01**: GitHub Agent searches repos by topic/language/stars via REST API
-- [ ] **COLL-02**: GitHub Agent fetches star history (stargazers with timestamps) for velocity calculation — `star_velocity = stars_last_30d / total_stars`, clamped to [-1.0, 1.0]
-- [ ] **COLL-03**: GitHub Agent fetches commit activity, contributor stats, issue velocity per repo
-- [ ] **COLL-04**: HN + Tavily Agent fetches top/best HN stories via Firebase API
-- [ ] **COLL-05**: HN + Tavily Agent fetches founder bios, funding news, job postings via Tavily
+- [x] **COLL-01**: GitHub Agent searches repos by topic/language/stars via REST API
+- [x] **COLL-02**: GitHub Agent fetches star history (stargazers with timestamps) for velocity calculation — `star_velocity = stars_last_30d / total_stars`, clamped to [-1.0, 1.0]
+- [x] **COLL-03**: GitHub Agent fetches commit activity, contributor stats, issue velocity per repo
+- [x] **COLL-04**: HN + Tavily Agent fetches top/best HN stories via Firebase API
+- [x] **COLL-05**: HN + Tavily Agent fetches founder bios, funding news, job postings via Tavily
 - [ ] **COLL-06**: RAG ingestion pipeline: fetch HN stories + RSS -> chunk -> embed with MiniLM -> store in ChromaDB
 - [ ] **COLL-07**: RAG Agent queries ChromaDB and returns relevant context chunks for a given topic
 - [ ] **COLL-08**: All 3 collection agents run in parallel via ADK

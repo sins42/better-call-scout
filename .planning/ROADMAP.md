@@ -47,7 +47,7 @@ Plans:
 **Owner**: Person 1 (Raghav)
 
 Plans:
-- [ ] 02-01-PLAN.md — GitHub Agent + HN/Tavily Agent: search, star velocity, commit activity, HN Firebase, Tavily news tools
+- [x] 02-01-PLAN.md — GitHub Agent + HN/Tavily Agent: search, star velocity, commit activity, HN Firebase, Tavily news tools
 - [ ] 02-02-PLAN.md — RAG ingestion pipeline + RAG Agent + Critic Agent + ParallelAgent wiring
 
 ### Phase 3: Analysis Layer
@@ -110,7 +110,7 @@ Note: Phases 2 and 3 can proceed in parallel after Phase 1 (different owners), b
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Contracts | 0/1 | Not started | - |
-| 2. Collection Layer | 0/2 | Not started | - |
+| 2. Collection Layer | 1/2 | In Progress|  |
 | 3. Analysis Layer | 0/2 | Not started | - |
 | 4. Integration + Frontend | 0/2 | Not started | - |
 | 5. Deployment + Polish | 0/1 | Not started | - |
