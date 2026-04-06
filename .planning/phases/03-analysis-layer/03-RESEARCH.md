@@ -662,22 +662,16 @@ def build_pipeline_state(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does `LoopAgent` count iterations as (generator + critic = 1 cycle) or (each agent call = 1 iteration)?**
-   - What we know: ADK docs say "the loop runs at most N iterations"; examples show [gen, critic] as two sub-agents with `max_iterations=5` producing 5 gen+critic cycles.
-   - What's unclear: Whether `max_iterations=2` gives 2 gen+critic cycles (desired: D-05) or 1 gen+critic + 1 gen only.
-   - Recommendation: Test with `max_iterations=2` and a logging tool in each sub-agent to confirm cycle count. If 1 cycle only, use `max_iterations=2` (which gives 2 gen+critic cycles, matching D-05). If 1 full cycle per iteration, keep `max_iterations=2`.
+   - **RESOLVED:** Per ADK docs ([adk.dev/agents/workflow-agents/loop-agents/](https://adk.dev/agents/workflow-agents/loop-agents/)), one "iteration" = one complete pass through all `sub_agents` in order. For `LoopAgent(sub_agents=[gen, critic], max_iterations=2)`, execution is gen(iter1)→critic(iter1)→gen(iter2)→critic(iter2) — 2 full gen+critic cycles (4 total agent calls). This matches D-05 exactly. Use `max_iterations=2`.
 
 2. **How to handle synthesis when output_schema=SynthesisReport produces malformed JSON from Gemini?**
-   - What we know: Deeply nested Pydantic schemas in `response_schema` can cause Gemini to produce incomplete JSON.
-   - What's unclear: How often this occurs with `gemini-2.0-flash` specifically.
-   - Recommendation: Build a Python fallback in the synthesis agent file — if `model_validate()` raises, manually construct `SynthesisReport` from the three analyst state keys and a simpler string-only synthesis hypothesis.
+   - **RESOLVED:** Plan 03-02 implements `build_synthesis_report_from_state()` as a Python fallback constructor. If Gemini's structured output fails validation, the orchestrator (Phase 4) calls this function to construct `SynthesisReport` directly from the three analyst state keys. Additionally, the synthesis instruction includes a minimal JSON example to guide Gemini's output.
 
 3. **What confidence_score weighting to use for SynthesisReport (D-09)?**
-   - What we know: D-09 says weighted average of 3 confidence_score values; "simple and transparent."
-   - What's unclear: Equal weights (1/3 each) or persona-weighted (e.g., VC has higher weight for market signals)?
-   - Recommendation: Use equal weights (1/3 each) unless otherwise specified. Compute in Python post-synthesis: `sum(h.confidence_score for h in report.hypotheses) / len(report.hypotheses)`. Note: SynthesisReport does not currently have an `overall_confidence` field in the schema — this may need to be added or computed separately.
+   - **RESOLVED:** Equal weights (1/3 each) per D-09 ("simple and transparent"). Computed in Python: `sum(h.confidence_score for h in report.hypotheses) / len(report.hypotheses)`. This is computed in `generate_scout_report_md()`, NOT stored as a field on `SynthesisReport` — the schema is not modified.
 
 ---
 
