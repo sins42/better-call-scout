@@ -417,7 +417,9 @@ class TestSearchTavilyNews:
             ]
         }
 
-        with patch("tavily.AsyncTavilyClient") as mock_client_cls:
+        with patch(
+            "src.agents.collection.hn_tavily_agent.AsyncTavilyClient"
+        ) as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.search = AsyncMock(return_value=mock_search_response)
             mock_client_cls.return_value = mock_client
@@ -445,7 +447,9 @@ class TestSearchTavilyNews:
             ]
         }
 
-        with patch("tavily.AsyncTavilyClient") as mock_client_cls:
+        with patch(
+            "src.agents.collection.hn_tavily_agent.AsyncTavilyClient"
+        ) as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.search = AsyncMock(return_value=mock_search_response)
             mock_client_cls.return_value = mock_client
@@ -472,7 +476,9 @@ class TestSearchTavilyNews:
 
     def test_search_tavily_news_fallback_on_error(self):
         """When Tavily raises an exception, returns fallback result."""
-        with patch("tavily.AsyncTavilyClient") as mock_client_cls:
+        with patch(
+            "src.agents.collection.hn_tavily_agent.AsyncTavilyClient"
+        ) as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.search = AsyncMock(side_effect=Exception("Quota exhausted"))
             mock_client_cls.return_value = mock_client
