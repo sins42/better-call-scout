@@ -2,11 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-data-contracts-01-PLAN.md
-last_updated: "2026-04-04T15:42:32.396Z"
-last_activity: 2026-04-04
+status: verifying
+stopped_at: Completed 02-collection-layer-02-PLAN.md
+last_updated: "2026-04-06T18:36:03.293Z"
+last_activity: 2026-04-06
 progress:
+  total_phases: 5
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
   percent: 0
 ---
 
@@ -17,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** A single query produces a structured, evidence-backed hypothesis about what's about to boom in tech -- with VC, developer, and journalist perspectives in one report.
-**Current focus:** Phase 1: Data Contracts
+**Current focus:** Phase 02 — collection-layer
 
 ## Current Position
 
-Phase: 1 of 5 (Data Contracts)
-Plan: 1 of 1 in current phase
-Status: Ready to execute
-Last activity: 2026-04-04
+Phase: 3
+Plan: Not started
+Status: Phase complete — ready for verification
+Last activity: 2026-04-06
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -49,6 +53,8 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-data-contracts P01 | 8 | 2 tasks | 3 files |
+| Phase 02-collection-layer P01 | 20 | 2 tasks | 3 files |
+| Phase 02-collection-layer P02 | 25 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -62,6 +68,10 @@ Recent decisions affecting current work:
 - [Roadmap]: Critic Agent serves dual roles (collection filter + analysis loop partner) -- interface design needed in Phase 1 or early Phase 2
 - [Phase 01-data-contracts]: HttpUrl for RepoData/NewsItem url fields; RAGContextChunk.source is plain str to support file paths and ChromaDB doc IDs
 - [Phase 01-data-contracts]: star_velocity bounded [-1.0, 1.0] as normalized rate; SynthesisReport.generated_at defaults via lambda to datetime.now(timezone.utc)
+- [Phase 02-collection-layer]: Patch AsyncTavilyClient at module level for test mock fidelity, not at import source
+- [Phase 02-collection-layer]: Star velocity uses first-page stargazer sampling (100 most recent) to avoid paginating all stargazers for 50-100 repos
+- [Phase 02-collection-layer]: Use importlib.import_module in __init__.py to prevent package-attribute shadowing: from pkg.sub import name shadows submodule access, breaking dotted import syntax in tests
+- [Phase 02-collection-layer]: D-05/D-06/D-07 thresholds in heuristic_filter: forks always rejected, commits>20+contributors>3+age>30d pass, commits<5 or contributors<1 reject, borderline escalated to LLM
 
 ### Pending Todos
 
@@ -75,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T15:42:32.394Z
-Stopped at: Completed 01-data-contracts-01-PLAN.md
+Last session: 2026-04-06T18:32:17.870Z
+Stopped at: Completed 02-collection-layer-02-PLAN.md
 Resume file: None
