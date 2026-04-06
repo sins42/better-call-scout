@@ -1,1 +1,506 @@
 """Collection Layer Tests (Person 1: Raghav)"""
+import asyncio
+import os
+from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+
+# ---------------------------------------------------------------------------
+# GitHub Agent Tests
+# ---------------------------------------------------------------------------
+
+
+class TestSearchGithubRepos:
+    """Tests for search_github_repos tool function."""
+
+    def test_search_github_repos_returns_repo_list(self):
+        """search_github_repos returns dict with 'repos' key containing list of dicts."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "items": [
+                {
+                    "full_name": "owner/repo1",
+                    "html_url": "https://github.com/owner/repo1",
+                    "stargazers_count": 1000,
+                    "language": "Python",
+                    "topics": ["ml", "ai"],
+                    "fork": False,
+                    "created_at": "2023-01-01T00:00:00Z",
+                },
+                {
+                    "full_name": "owner/repo2",
+                    "html_url": "https://github.com/owner/repo2",
+                    "stargazers_count": 500,
+                    "language": "JavaScript",
+                    "topics": [],
+                    "fork": False,
+                    "created_at": "2023-06-01T00:00:00Z",
+                },
+            ]
+        }
+        mock_response.raise_for_status = MagicMock()
+
+        with patch("requests.get", return_value=mock_response):
+            with patch.dict(os.environ, {"GITHUB_TOKEN": "fake_token"}):
+                from src.agents.collection.github_agent import search_github_repos
+
+                result = asyncio.run(
+                    search_github_repos("machine learning", language="python", min_stars=50)
+                )
+
+        assert "repos" in result
+        assert isinstance(result["repos"], list)
+        assert len(result["repos"]) == 2
+
+    def test_search_github_repos_each_repo_has_required_keys(self):
+        """Each repo dict in search results has required keys."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "items": [
+                {
+                    "full_name": "owner/repo1",
+                    "html_url": "https://github.com/owner/repo1",
+                    "stargazers_count": 1000,
+                    "language": "Python",
+                    "topics": ["ml"],
+                    "fork": False,
+                    "created_at": "2023-01-01T00:00:00Z",
+                }
+            ]
+        }
+        mock_response.raise_for_status = MagicMock()
+
+        with patch("requests.get", return_value=mock_response):
+            with patch.dict(os.environ, {"GITHUB_TOKEN": "fake_token"}):
+                from src.agents.collection.github_agent import search_github_repos
+
+                result = asyncio.run(search_github_repos("machine learning"))
+
+        repo = result["repos"][0]
+        required_keys = {"name", "url", "stars", "language", "topics", "is_fork", "created_at"}
+        assert required_keys.issubset(set(repo.keys()))
+
+
+class TestFetchRepoDetails:
+    """Tests for fetch_repo_details tool function."""
+
+    def test_fetch_repo_details_star_velocity_clamped(self):
+        """fetch_repo_details returns star_velocity clamped to [-1.0, 1.0]."""
+        # Recent 100 stargazers all within last 30 days (high velocity)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=5)
+        recent_time = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        stargazers_response = MagicMock()
+        stargazers_response.status_code = 200
+        stargazers_response.json.return_value = [
+            {"starred_at": recent_time, "user": {"login": f"user{i}"}}
+            for i in range(100)
+        ]
+        stargazers_response.raise_for_status = MagicMock()
+
+        repo_response = MagicMock()
+        repo_response.status_code = 200
+        repo_response.json.return_value = {
+            "stargazers_count": 50,  # total stars less than recent = velocity > 1 before clamp
+            "open_issues_count": 10,
+        }
+        repo_response.raise_for_status = MagicMock()
+
+        # commit_activity 202 then success
+        commit_activity_response = MagicMock()
+        commit_activity_response.status_code = 200
+        commit_activity_response.json.return_value = [
+            {"total": 5, "week": 1700000000, "days": [1, 0, 1, 2, 1, 0, 0]}
+            for _ in range(4)
+        ]
+        commit_activity_response.raise_for_status = MagicMock()
+
+        contributors_response = MagicMock()
+        contributors_response.status_code = 200
+        contributors_response.json.return_value = [{"author": {"login": "user1"}}] * 5
+        contributors_response.raise_for_status = MagicMock()
+
+        call_count = [0]
+
+        def mock_get(url, **kwargs):
+            call_count[0] += 1
+            if "stargazers" in url:
+                return stargazers_response
+            elif "stats/commit_activity" in url:
+                return commit_activity_response
+            elif "stats/contributors" in url:
+                return contributors_response
+            else:
+                return repo_response
+
+        with patch("requests.get", side_effect=mock_get):
+            with patch.dict(os.environ, {"GITHUB_TOKEN": "fake_token"}):
+                from src.agents.collection.github_agent import fetch_repo_details
+
+                result = asyncio.run(fetch_repo_details("owner", "repo"))
+
+        assert "star_velocity" in result
+        assert -1.0 <= result["star_velocity"] <= 1.0
+
+    def test_fetch_repo_details_returns_required_keys(self):
+        """fetch_repo_details returns dict with all required keys."""
+        cutoff = datetime.now(timezone.utc) - timedelta(days=15)
+        recent_time = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        stargazers_response = MagicMock()
+        stargazers_response.status_code = 200
+        stargazers_response.json.return_value = [
+            {"starred_at": recent_time, "user": {"login": "user1"}}
+        ]
+        stargazers_response.raise_for_status = MagicMock()
+
+        repo_response = MagicMock()
+        repo_response.status_code = 200
+        repo_response.json.return_value = {
+            "stargazers_count": 1000,
+            "open_issues_count": 42,
+        }
+        repo_response.raise_for_status = MagicMock()
+
+        commit_activity_response = MagicMock()
+        commit_activity_response.status_code = 200
+        commit_activity_response.json.return_value = [
+            {"total": 10, "week": 1700000000, "days": [1, 2, 1, 2, 1, 2, 1]}
+            for _ in range(4)
+        ]
+        commit_activity_response.raise_for_status = MagicMock()
+
+        contributors_response = MagicMock()
+        contributors_response.status_code = 200
+        contributors_response.json.return_value = [{"author": {"login": f"user{i}"}} for i in range(10)]
+        contributors_response.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "stargazers" in url:
+                return stargazers_response
+            elif "stats/commit_activity" in url:
+                return commit_activity_response
+            elif "stats/contributors" in url:
+                return contributors_response
+            else:
+                return repo_response
+
+        with patch("requests.get", side_effect=mock_get):
+            with patch.dict(os.environ, {"GITHUB_TOKEN": "fake_token"}):
+                from src.agents.collection.github_agent import fetch_repo_details
+
+                result = asyncio.run(fetch_repo_details("owner", "repo"))
+
+        required_keys = {"star_velocity", "commits", "contributors", "issues"}
+        assert required_keys.issubset(set(result.keys()))
+
+    def test_fetch_repo_details_handles_202_retry(self):
+        """fetch_repo_details retries when GitHub returns 202 for stats endpoints."""
+        cutoff = datetime.now(timezone.utc) - timedelta(days=15)
+        recent_time = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        stargazers_response = MagicMock()
+        stargazers_response.status_code = 200
+        stargazers_response.json.return_value = [
+            {"starred_at": recent_time, "user": {"login": "user1"}}
+        ]
+        stargazers_response.raise_for_status = MagicMock()
+
+        repo_response = MagicMock()
+        repo_response.status_code = 200
+        repo_response.json.return_value = {"stargazers_count": 1000, "open_issues_count": 5}
+        repo_response.raise_for_status = MagicMock()
+
+        # First call to commit_activity returns 202, second returns 200
+        commit_202 = MagicMock()
+        commit_202.status_code = 202
+        commit_202.json.return_value = {}
+        commit_202.raise_for_status = MagicMock()
+
+        commit_200 = MagicMock()
+        commit_200.status_code = 200
+        commit_200.json.return_value = [
+            {"total": 8, "week": 1700000000, "days": [1, 1, 1, 1, 1, 1, 2]}
+            for _ in range(4)
+        ]
+        commit_200.raise_for_status = MagicMock()
+
+        contributors_response = MagicMock()
+        contributors_response.status_code = 200
+        contributors_response.json.return_value = [{"author": {"login": "user1"}}] * 3
+        contributors_response.raise_for_status = MagicMock()
+
+        commit_call_count = [0]
+
+        def mock_get(url, **kwargs):
+            if "stargazers" in url:
+                return stargazers_response
+            elif "stats/commit_activity" in url:
+                commit_call_count[0] += 1
+                if commit_call_count[0] == 1:
+                    return commit_202
+                return commit_200
+            elif "stats/contributors" in url:
+                return contributors_response
+            else:
+                return repo_response
+
+        with patch("requests.get", side_effect=mock_get):
+            with patch("asyncio.sleep", new_callable=AsyncMock):
+                with patch.dict(os.environ, {"GITHUB_TOKEN": "fake_token"}):
+                    from src.agents.collection.github_agent import fetch_repo_details
+
+                    result = asyncio.run(fetch_repo_details("owner", "repo"))
+
+        # Should have retried at least once
+        assert commit_call_count[0] >= 2
+        assert "commits" in result
+
+
+class TestGithubAgentInstance:
+    """Tests for github_agent LlmAgent instance."""
+
+    def test_github_agent_is_llm_agent(self):
+        """github_agent is an LlmAgent instance with correct name."""
+        from google.adk.agents.llm_agent import LlmAgent
+
+        with patch.dict(os.environ, {"GITHUB_TOKEN": "fake_token"}):
+            from src.agents.collection.github_agent import github_agent
+
+        assert isinstance(github_agent, LlmAgent)
+        assert github_agent.name == "github_agent"
+
+    def test_github_agent_has_output_key(self):
+        """github_agent has output_key set to 'github_results'."""
+        with patch.dict(os.environ, {"GITHUB_TOKEN": "fake_token"}):
+            from src.agents.collection.github_agent import github_agent
+
+        assert github_agent.output_key == "github_results"
+
+
+# ---------------------------------------------------------------------------
+# HN+Tavily Agent Tests
+# ---------------------------------------------------------------------------
+
+
+class TestFetchHnTopStories:
+    """Tests for fetch_hn_top_stories tool function."""
+
+    def test_fetch_hn_top_stories_returns_stories(self):
+        """fetch_hn_top_stories returns dict with 'stories' key."""
+        topstories_response = MagicMock()
+        topstories_response.status_code = 200
+        topstories_response.json.return_value = [1, 2, 3, 4, 5]
+        topstories_response.raise_for_status = MagicMock()
+
+        story_response = MagicMock()
+        story_response.status_code = 200
+        story_response.json.return_value = {
+            "id": 1,
+            "type": "story",
+            "title": "Test Story",
+            "url": "https://example.com",
+            "score": 100,
+            "time": 1700000000,
+            "by": "testuser",
+        }
+        story_response.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "topstories" in url:
+                return topstories_response
+            return story_response
+
+        with patch("requests.get", side_effect=mock_get):
+            from src.agents.collection.hn_tavily_agent import fetch_hn_top_stories
+
+            result = asyncio.run(fetch_hn_top_stories(limit=5))
+
+        assert "stories" in result
+        assert isinstance(result["stories"], list)
+
+    def test_fetch_hn_top_stories_each_story_has_required_keys(self):
+        """Each story dict has required keys: title, url, score, time, by."""
+        topstories_response = MagicMock()
+        topstories_response.status_code = 200
+        topstories_response.json.return_value = [42]
+        topstories_response.raise_for_status = MagicMock()
+
+        story_response = MagicMock()
+        story_response.status_code = 200
+        story_response.json.return_value = {
+            "id": 42,
+            "type": "story",
+            "title": "Test Story",
+            "url": "https://example.com",
+            "score": 200,
+            "time": 1700000000,
+            "by": "user123",
+        }
+        story_response.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "topstories" in url:
+                return topstories_response
+            return story_response
+
+        with patch("requests.get", side_effect=mock_get):
+            from src.agents.collection.hn_tavily_agent import fetch_hn_top_stories
+
+            result = asyncio.run(fetch_hn_top_stories(limit=1))
+
+        assert len(result["stories"]) >= 1
+        story = result["stories"][0]
+        required_keys = {"title", "url", "score", "time", "by"}
+        assert required_keys.issubset(set(story.keys()))
+
+    def test_fetch_hn_top_stories_concurrent_fetch(self):
+        """HN stories are fetched concurrently using asyncio.gather."""
+        import inspect
+        import src.agents.collection.hn_tavily_agent as module
+
+        source = inspect.getsource(module.fetch_hn_top_stories)
+        assert "asyncio.gather" in source, "fetch_hn_top_stories must use asyncio.gather for concurrent fetching"
+
+    def test_fetch_hn_top_stories_url_fallback(self):
+        """Stories without url use HN item URL fallback."""
+        topstories_response = MagicMock()
+        topstories_response.status_code = 200
+        topstories_response.json.return_value = [99]
+        topstories_response.raise_for_status = MagicMock()
+
+        story_response = MagicMock()
+        story_response.status_code = 200
+        story_response.json.return_value = {
+            "id": 99,
+            "type": "story",
+            "title": "Ask HN: No URL post",
+            # No "url" key — should fall back
+            "score": 50,
+            "time": 1700000000,
+            "by": "poster",
+        }
+        story_response.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "topstories" in url:
+                return topstories_response
+            return story_response
+
+        with patch("requests.get", side_effect=mock_get):
+            from src.agents.collection.hn_tavily_agent import fetch_hn_top_stories
+
+            result = asyncio.run(fetch_hn_top_stories(limit=1))
+
+        assert len(result["stories"]) >= 1
+        assert "ycombinator.com/item?id=99" in result["stories"][0]["url"]
+
+
+class TestSearchTavilyNews:
+    """Tests for search_tavily_news tool function."""
+
+    def test_search_tavily_news_returns_results(self):
+        """search_tavily_news returns dict with 'results' key."""
+        mock_search_response = {
+            "results": [
+                {
+                    "title": "AI Funding News",
+                    "url": "https://techcrunch.com/ai-funding",
+                    "content": "Major funding round announced...",
+                    "score": 0.95,
+                    "published_date": "2024-01-15",
+                }
+            ]
+        }
+
+        with patch("tavily.AsyncTavilyClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.search = AsyncMock(return_value=mock_search_response)
+            mock_client_cls.return_value = mock_client
+
+            with patch.dict(os.environ, {"TAVILY_API_KEY": "fake_key"}):
+                from src.agents.collection.hn_tavily_agent import search_tavily_news
+
+                result = asyncio.run(search_tavily_news("AI funding"))
+
+        assert "results" in result
+        assert isinstance(result["results"], list)
+        assert len(result["results"]) >= 1
+
+    def test_search_tavily_news_each_result_has_required_keys(self):
+        """Each news result has required keys: title, url, content, score, published_date."""
+        mock_search_response = {
+            "results": [
+                {
+                    "title": "Test Article",
+                    "url": "https://example.com/article",
+                    "content": "Article content here...",
+                    "score": 0.85,
+                    "published_date": "2024-03-01",
+                }
+            ]
+        }
+
+        with patch("tavily.AsyncTavilyClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.search = AsyncMock(return_value=mock_search_response)
+            mock_client_cls.return_value = mock_client
+
+            with patch.dict(os.environ, {"TAVILY_API_KEY": "fake_key"}):
+                from src.agents.collection.hn_tavily_agent import search_tavily_news
+
+                result = asyncio.run(search_tavily_news("test query"))
+
+        result_item = result["results"][0]
+        required_keys = {"title", "url", "content", "score", "published_date"}
+        assert required_keys.issubset(set(result_item.keys()))
+
+    def test_search_tavily_news_fallback_no_key(self):
+        """When TAVILY_API_KEY is missing, returns HN-only fallback."""
+        env_without_tavily = {k: v for k, v in os.environ.items() if k != "TAVILY_API_KEY"}
+
+        with patch.dict(os.environ, env_without_tavily, clear=True):
+            from src.agents.collection.hn_tavily_agent import search_tavily_news
+
+            result = asyncio.run(search_tavily_news("AI funding"))
+
+        assert result == {"results": [], "fallback": True}
+
+    def test_search_tavily_news_fallback_on_error(self):
+        """When Tavily raises an exception, returns fallback result."""
+        with patch("tavily.AsyncTavilyClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.search = AsyncMock(side_effect=Exception("Quota exhausted"))
+            mock_client_cls.return_value = mock_client
+
+            with patch.dict(os.environ, {"TAVILY_API_KEY": "fake_key"}):
+                from src.agents.collection.hn_tavily_agent import search_tavily_news
+
+                result = asyncio.run(search_tavily_news("AI funding"))
+
+        assert result["results"] == []
+        assert result["fallback"] is True
+        assert "error" in result
+
+
+class TestHnTavilyAgentInstance:
+    """Tests for hn_tavily_agent LlmAgent instance."""
+
+    def test_hn_tavily_agent_is_llm_agent(self):
+        """hn_tavily_agent is an LlmAgent instance with correct name."""
+        from google.adk.agents.llm_agent import LlmAgent
+
+        from src.agents.collection.hn_tavily_agent import hn_tavily_agent
+
+        assert isinstance(hn_tavily_agent, LlmAgent)
+        assert hn_tavily_agent.name == "hn_tavily_agent"
+
+    def test_hn_tavily_agent_has_output_key(self):
+        """hn_tavily_agent has output_key set to 'hn_tavily_results'."""
+        from src.agents.collection.hn_tavily_agent import hn_tavily_agent
+
+        assert hn_tavily_agent.output_key == "hn_tavily_results"
