@@ -20,10 +20,10 @@
 - [x] **COLL-03**: GitHub Agent fetches commit activity, contributor stats, issue velocity per repo
 - [x] **COLL-04**: HN + Tavily Agent fetches top/best HN stories via Firebase API
 - [x] **COLL-05**: HN + Tavily Agent fetches founder bios, funding news, job postings via Tavily
-- [ ] **COLL-06**: RAG ingestion pipeline: fetch HN stories + RSS -> chunk -> embed with MiniLM -> store in ChromaDB
-- [ ] **COLL-07**: RAG Agent queries ChromaDB and returns relevant context chunks for a given topic
-- [ ] **COLL-08**: All 3 collection agents run in parallel via ADK
-- [ ] **COLL-09**: Critic Agent filters raw repo list (removes forks, boilerplate, one-day spikes, spam)
+- [x] **COLL-06**: RAG ingestion pipeline: fetch HN stories + RSS -> chunk -> embed with MiniLM -> store in ChromaDB
+- [x] **COLL-07**: RAG Agent queries ChromaDB and returns relevant context chunks for a given topic
+- [x] **COLL-08**: All 3 collection agents run in parallel via ADK
+- [x] **COLL-09**: Critic Agent filters raw repo list (removes forks, boilerplate, one-day spikes, spam)
 
 ### Analysis Layer (Person 2: Sindhuja)
 

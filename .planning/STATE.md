@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-collection-layer-01-PLAN.md
-last_updated: "2026-04-06T18:22:20.259Z"
+status: verifying
+stopped_at: Completed 02-collection-layer-02-PLAN.md
+last_updated: "2026-04-06T18:32:17.872Z"
 last_activity: 2026-04-06
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 Phase: 02 (collection-layer) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-06
 
 Progress: [░░░░░░░░░░] 0%
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01-data-contracts P01 | 8 | 2 tasks | 3 files |
 | Phase 02-collection-layer P01 | 20 | 2 tasks | 3 files |
+| Phase 02-collection-layer P02 | 25 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Recent decisions affecting current work:
 - [Phase 01-data-contracts]: star_velocity bounded [-1.0, 1.0] as normalized rate; SynthesisReport.generated_at defaults via lambda to datetime.now(timezone.utc)
 - [Phase 02-collection-layer]: Patch AsyncTavilyClient at module level for test mock fidelity, not at import source
 - [Phase 02-collection-layer]: Star velocity uses first-page stargazer sampling (100 most recent) to avoid paginating all stargazers for 50-100 repos
+- [Phase 02-collection-layer]: Use importlib.import_module in __init__.py to prevent package-attribute shadowing: from pkg.sub import name shadows submodule access, breaking dotted import syntax in tests
+- [Phase 02-collection-layer]: D-05/D-06/D-07 thresholds in heuristic_filter: forks always rejected, commits>20+contributors>3+age>30d pass, commits<5 or contributors<1 reject, borderline escalated to LLM
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-06T18:22:20.257Z
-Stopped at: Completed 02-collection-layer-01-PLAN.md
+Last session: 2026-04-06T18:32:17.870Z
+Stopped at: Completed 02-collection-layer-02-PLAN.md
 Resume file: None

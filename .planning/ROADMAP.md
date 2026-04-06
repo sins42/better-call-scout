@@ -48,7 +48,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — GitHub Agent + HN/Tavily Agent: search, star velocity, commit activity, HN Firebase, Tavily news tools
-- [ ] 02-02-PLAN.md — RAG ingestion pipeline + RAG Agent + Critic Agent + ParallelAgent wiring
+- [x] 02-02-PLAN.md — RAG ingestion pipeline + RAG Agent + Critic Agent + ParallelAgent wiring
 
 ### Phase 3: Analysis Layer
 **Goal**: Three analyst perspectives produce critic-refined, structured hypotheses with supporting visualizations
