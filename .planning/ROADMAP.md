@@ -43,12 +43,12 @@ Plans:
   3. RAG Agent returns relevant RAGContextChunk objects from a pre-populated ChromaDB corpus for a given topic
   4. All three collection agents can run concurrently (parallel ADK execution verified)
   5. Critic Agent filters the raw repo list, removing forks, boilerplate, one-day spikes, and spam — output is a smaller, cleaner list of RepoData
-**Plans**: TBD
+**Plans**: 2 plans
 **Owner**: Person 1 (Raghav)
 
 Plans:
-- [ ] 02-01: GitHub Agent + HN/Tavily Agent implementation
-- [ ] 02-02: RAG ingestion pipeline + RAG Agent + Critic Agent
+- [ ] 02-01-PLAN.md — GitHub Agent + HN/Tavily Agent: search, star velocity, commit activity, HN Firebase, Tavily news tools
+- [ ] 02-02-PLAN.md — RAG ingestion pipeline + RAG Agent + Critic Agent + ParallelAgent wiring
 
 ### Phase 3: Analysis Layer
 **Goal**: Three analyst perspectives produce critic-refined, structured hypotheses with supporting visualizations
