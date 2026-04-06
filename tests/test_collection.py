@@ -708,3 +708,139 @@ class TestQueryCorpus:
         assert len(results) == 1
         assert results[0]["text"] == "text chunk"
         assert results[0]["source"] == "doc-id-1"
+
+
+# ---------------------------------------------------------------------------
+# RAG Agent Tests
+# ---------------------------------------------------------------------------
+
+
+class TestRagAgentInstance:
+    """Tests for rag_agent LlmAgent instance."""
+
+    def test_rag_agent_is_llm_agent(self):
+        """rag_agent is an LlmAgent instance with correct name and output_key."""
+        from google.adk.agents.llm_agent import LlmAgent
+
+        with patch("chromadb.PersistentClient"):
+            with patch(
+                "chromadb.utils.embedding_functions.SentenceTransformerEmbeddingFunction"
+            ):
+                from src.agents.collection.rag_agent import rag_agent
+
+        assert isinstance(rag_agent, LlmAgent)
+        assert rag_agent.name == "rag_agent"
+        assert rag_agent.output_key == "rag_results"
+
+
+class TestQueryRagCorpus:
+    """Tests for query_rag_corpus tool function."""
+
+    def test_query_rag_corpus_returns_chunks_dict(self):
+        """query_rag_corpus returns dict with 'chunks' key containing list of chunk dicts."""
+        mock_chunks = [
+            {"text": "AI text", "source": "id1", "metadata": {"source_type": "hackernews"}},
+        ]
+
+        with patch("src.rag.retrieval.query_corpus", return_value=mock_chunks):
+            from src.agents.collection.rag_agent import query_rag_corpus
+
+            result = asyncio.run(query_rag_corpus("machine learning", n_results=5))
+
+        assert "chunks" in result
+        assert isinstance(result["chunks"], list)
+        assert result["chunks"][0]["text"] == "AI text"
+
+
+# ---------------------------------------------------------------------------
+# Critic Agent Tests
+# ---------------------------------------------------------------------------
+
+
+class TestHeuristicFilter:
+    """Tests for heuristic_filter tool function."""
+
+    def _make_repo(
+        self,
+        *,
+        is_fork: bool = False,
+        commits: int = 25,
+        contributors: int = 5,
+        age_days: int = 60,
+    ) -> dict:
+        """Helper to build a minimal repo dict for filter tests."""
+        from datetime import datetime, timedelta, timezone
+
+        created_at = (datetime.now(timezone.utc) - timedelta(days=age_days)).isoformat()
+        return {
+            "name": "owner/repo",
+            "url": "https://github.com/owner/repo",
+            "stars": 1000,
+            "star_velocity": 0.1,
+            "commits": commits,
+            "contributors": contributors,
+            "issues": 10,
+            "topics": [],
+            "language": "Python",
+            "is_fork": is_fork,
+            "created_at": created_at,
+        }
+
+    def test_heuristic_filter_rejects_forks(self):
+        """Repo with is_fork=True is always rejected even with high activity."""
+        import json
+        from src.agents.critic_agent import heuristic_filter
+
+        repo = self._make_repo(is_fork=True, commits=100, contributors=10, age_days=90)
+        result = asyncio.run(heuristic_filter(json.dumps([repo])))
+
+        assert len(result["rejected"]) == 1
+        assert len(result["passed"]) == 0
+
+    def test_heuristic_filter_passes_strong_repos(self):
+        """Repo with commits>20, contributors>3, age>30d is passed heuristically."""
+        import json
+        from src.agents.critic_agent import heuristic_filter
+
+        repo = self._make_repo(commits=25, contributors=5, age_days=60)
+        result = asyncio.run(heuristic_filter(json.dumps([repo])))
+
+        assert len(result["passed"]) == 1
+        assert len(result["rejected"]) == 0
+        assert len(result["borderline"]) == 0
+
+    def test_heuristic_filter_borderline_repos(self):
+        """Repo with commits=10 (5-20 range) goes to borderline."""
+        import json
+        from src.agents.critic_agent import heuristic_filter
+
+        repo = self._make_repo(commits=10, contributors=2, age_days=20)
+        result = asyncio.run(heuristic_filter(json.dumps([repo])))
+
+        assert len(result["borderline"]) == 1
+        assert len(result["passed"]) == 0
+        assert len(result["rejected"]) == 0
+
+    def test_heuristic_filter_rejects_low_activity(self):
+        """Repo with commits<5 or contributors<1 is rejected heuristically."""
+        import json
+        from src.agents.critic_agent import heuristic_filter
+
+        repo = self._make_repo(commits=2, contributors=0, age_days=90)
+        result = asyncio.run(heuristic_filter(json.dumps([repo])))
+
+        assert len(result["rejected"]) == 1
+        assert len(result["passed"]) == 0
+
+
+class TestCriticAgentInstance:
+    """Tests for critic_agent LlmAgent instance."""
+
+    def test_critic_agent_is_llm_agent(self):
+        """critic_agent is an LlmAgent instance with name='critic_agent' and output_key='filtered_repos'."""
+        from google.adk.agents.llm_agent import LlmAgent
+        from src.agents.critic_agent import critic_agent
+
+        assert isinstance(critic_agent, LlmAgent)
+        assert critic_agent.name == "critic_agent"
+        assert critic_agent.output_key == "filtered_repos"
