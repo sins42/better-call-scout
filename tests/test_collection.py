@@ -844,3 +844,72 @@ class TestCriticAgentInstance:
         assert isinstance(critic_agent, LlmAgent)
         assert critic_agent.name == "critic_agent"
         assert critic_agent.output_key == "filtered_repos"
+
+
+# ---------------------------------------------------------------------------
+# Collection Pipeline Composition Tests
+# ---------------------------------------------------------------------------
+
+
+class TestCollectionParallel:
+    """Tests for collection_parallel ParallelAgent composition."""
+
+    def test_collection_parallel_is_parallel_agent(self):
+        """collection_parallel is a ParallelAgent instance."""
+        from google.adk.agents.parallel_agent import ParallelAgent
+        from src.agents.collection import collection_parallel
+
+        assert isinstance(collection_parallel, ParallelAgent)
+
+    def test_collection_parallel_has_three_sub_agents(self):
+        """collection_parallel has exactly three sub-agents."""
+        from src.agents.collection import collection_parallel
+
+        assert len(collection_parallel.sub_agents) == 3
+
+    def test_collection_parallel_sub_agent_names(self):
+        """collection_parallel sub-agents are github, hn_tavily, and rag agents."""
+        from src.agents.collection import collection_parallel
+
+        names = {agent.name for agent in collection_parallel.sub_agents}
+        assert "github_agent" in names
+        assert "hn_tavily_agent" in names
+        assert "rag_agent" in names
+
+
+class TestCollectionPipeline:
+    """Tests for collection_pipeline SequentialAgent composition."""
+
+    def test_collection_pipeline_is_sequential_agent(self):
+        """collection_pipeline is a SequentialAgent instance."""
+        from google.adk.agents.sequential_agent import SequentialAgent
+        from src.agents.collection import collection_pipeline
+
+        assert isinstance(collection_pipeline, SequentialAgent)
+
+    def test_collection_pipeline_order(self):
+        """collection_pipeline runs collection_parallel first, then critic_agent."""
+        from src.agents.collection import collection_pipeline
+
+        assert collection_pipeline.sub_agents[0].name == "collection_parallel"
+        assert collection_pipeline.sub_agents[1].name == "critic_agent"
+
+
+class TestCollectionAllExports:
+    """Tests for __all__ exports from src.agents.collection."""
+
+    def test_all_exports(self):
+        """All five names are importable from src.agents.collection."""
+        from src.agents.collection import (
+            github_agent,
+            hn_tavily_agent,
+            rag_agent,
+            collection_parallel,
+            collection_pipeline,
+        )
+
+        assert github_agent is not None
+        assert hn_tavily_agent is not None
+        assert rag_agent is not None
+        assert collection_parallel is not None
+        assert collection_pipeline is not None
