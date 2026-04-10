@@ -65,8 +65,8 @@ Plans:
 **Owner**: Person 2 (Sindhuja)
 
 Plans:
-- [ ] 03-01: Three analyst agents + generator-critic loop
-- [ ] 03-02: Synthesis Agent + visualizations
+- [x] 03-01: Three analyst agents + generator-critic loop
+- [x] 03-02: Synthesis Agent + visualizations
 
 ### Phase 4: Integration + Frontend
 **Goal**: A user can enter a query in a Streamlit UI and receive a complete multi-perspective hypothesis report with charts and downloads
