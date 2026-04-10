@@ -12,14 +12,12 @@ A single query produces a structured, evidence-backed hypothesis about what's ab
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] GitHub Agent collects repo trends via REST API (star velocity, commits, contributors, issue velocity) — Validated in Phase 02: collection-layer
+- [x] HN + Tavily Agent collects tech news, founder signals, and job posting data — Validated in Phase 02: collection-layer
+- [x] RAG Agent queries ChromaDB corpus for domain context and historical benchmarking — Validated in Phase 02: collection-layer
+- [x] Critic Agent filters raw repos (removes forks, boilerplate, one-day spikes) — Validated in Phase 02: collection-layer
 
 ### Active
-
-- [ ] GitHub Agent collects repo trends via REST API (star velocity, commits, contributors, issue velocity)
-- [ ] HN + Tavily Agent collects tech news, founder signals, and job posting data
-- [ ] RAG Agent queries ChromaDB corpus for domain context and historical benchmarking
-- [ ] Critic Agent filters raw repos (removes forks, boilerplate, one-day spikes)
 - [ ] VC Analyst Agent produces structured hypothesis JSON (star velocity, market signals, funding mentions)
 - [ ] Developer Analyst Agent produces structured hypothesis JSON (ecosystem maturity, adoption curve, job signals)
 - [ ] Journalist Analyst Agent produces structured hypothesis JSON (narrative hooks, HN sentiment, media density)
@@ -90,4 +88,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-03 after initialization*
+*Last updated: 2026-04-06 — Phase 02 (collection-layer) complete*

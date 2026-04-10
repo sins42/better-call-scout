@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered (discuss mode)
+stopped_at: Phases 02 and 03 complete
 last_updated: "2026-04-06T18:38:18.545Z"
-last_activity: 2026-04-06 -- Phase 03 execution started
+last_activity: 2026-04-06 -- Phase 03 complete
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 2
-  completed_plans: 0
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** A single query produces a structured, evidence-backed hypothesis about what's about to boom in tech -- with VC, developer, and journalist perspectives in one report.
-**Current focus:** Phase 03 — analysis-layer
+**Current focus:** Phase 04 — integration-frontend
 
 ## Current Position
 
-Phase: 03 (analysis-layer) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 03
-Last activity: 2026-04-06 -- Phase 03 execution started
+Phase: 4 of 5 (Integration + Frontend)
+Plan: Not started
+Status: Phases 02 and 03 complete — ready to plan Phase 04
+Last activity: 2026-04-06
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -53,6 +53,8 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-data-contracts P01 | 8 | 2 tasks | 3 files |
+| Phase 02-collection-layer P01 | 20 | 2 tasks | 3 files |
+| Phase 02-collection-layer P02 | 25 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -66,6 +68,10 @@ Recent decisions affecting current work:
 - [Roadmap]: Critic Agent serves dual roles (collection filter + analysis loop partner) -- interface design needed in Phase 1 or early Phase 2
 - [Phase 01-data-contracts]: HttpUrl for RepoData/NewsItem url fields; RAGContextChunk.source is plain str to support file paths and ChromaDB doc IDs
 - [Phase 01-data-contracts]: star_velocity bounded [-1.0, 1.0] as normalized rate; SynthesisReport.generated_at defaults via lambda to datetime.now(timezone.utc)
+- [Phase 02-collection-layer]: Patch AsyncTavilyClient at module level for test mock fidelity, not at import source
+- [Phase 02-collection-layer]: Star velocity uses first-page stargazer sampling (100 most recent) to avoid paginating all stargazers for 50-100 repos
+- [Phase 02-collection-layer]: Use importlib.import_module in __init__.py to prevent package-attribute shadowing: from pkg.sub import name shadows submodule access, breaking dotted import syntax in tests
+- [Phase 02-collection-layer]: D-05/D-06/D-07 thresholds in heuristic_filter: forks always rejected, commits>20+contributors>3+age>30d pass, commits<5 or contributors<1 reject, borderline escalated to LLM
 
 ### Pending Todos
 
@@ -79,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-06T17:56:09.658Z
-Stopped at: Phase 3 context gathered (discuss mode)
-Resume file: .planning/phases/03-analysis-layer/03-CONTEXT.md
+Last session: 2026-04-06T18:38:18.545Z
+Stopped at: Phase 03 analysis-layer complete
+Resume file: None

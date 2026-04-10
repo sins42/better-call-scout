@@ -214,3 +214,5 @@ __marimo__/
 
 # Claude Code
 .claude/settings.local.json
+# Reference documentation (fetched from external sources)
+.reference/
