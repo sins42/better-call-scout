@@ -736,18 +736,10 @@
         }
       });
 
-      // synthesis_complete event (emitted by server as event name synthesis_complete)
-      es.addEventListener('synthesis_complete', function(e) {
+      // synthesis_complete is a progress notification only (data = plain text "Synthesis complete")
+      // The actual report JSON arrives via the 'complete' event below — do not parse or close here.
+      es.addEventListener('synthesis_complete', function() {
         setStage('stage-synthesis', 'complete');
-        es.close();
-        hide('skeleton');
-        setRunButtonState(false);
-        try {
-          const report = JSON.parse(e.data);
-          renderResults(report);
-        } catch (err) {
-          showError('Failed to parse pipeline response: ' + err.message);
-        }
       });
 
       es.addEventListener('session_id', function(e) {
