@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Better Call Scout</title>
+  <!-- Google Fonts: Inter + DM Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ---- Reset & Base ---- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: "Inter", "DM Sans", system-ui, sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #111827;
+      background: #ffffff;
+    }
+
+    /* ---- Keyframes ---- */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ---- Header (fixed 56px) ---- */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 56px;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+    }
+    .page-title {
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1.1;
+      color: #111827;
+    }
+    #run-btn {
+      background: #6366f1;
+      color: #ffffff;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      min-height: 36px;
+      font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    #run-btn:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+    #run-btn:disabled,
+    #run-btn.disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    /* ---- Main content ---- */
+    main {
+      padding-top: 56px;
+      padding-bottom: 64px;
+    }
+
+    /* ---- Query card ---- */
+    #query-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 24px auto;
+      max-width: 720px;
+    }
+    #query-input {
+      width: 100%;
+      font-size: 16px;
+      font-family: inherit;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      outline: none;
+      color: #111827;
+      background: #ffffff;
+    }
+    #query-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+    }
+    #persona-checkboxes {
+      display: flex;
+      gap: 24px;
+      margin-top: 16px;
+    }
+    #persona-checkboxes label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+      cursor: pointer;
+      min-height: 44px;
+    }
+    #persona-checkboxes input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    /* ---- Error state ---- */
+    #error-state {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+      padding: 12px 16px;
+      max-width: 720px;
+      margin: 16px auto;
+      display: none;
+      align-items: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #error-heading {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ef4444;
+      flex-shrink: 0;
+    }
+    #error-body {
+      font-size: 14px;
+      color: #111827;
+      flex: 1;
+      min-width: 200px;
+    }
+    #retry-btn {
+      background: #ef4444;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+    #retry-btn:hover { opacity: 0.9; }
+
+    /* ---- SSE progress strip ---- */
+    #progress-strip {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: #f3f4f6;
+      padding: 12px 24px;
+      border-radius: 8px;
+      margin: 24px auto;
+      max-width: 720px;
+      flex-wrap: wrap;
+    }
+    .stage {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.2;
+      transition: color 0.2s;
+    }
+    .stage.inactive {
+      color: #6b7280;
+    }
+    .stage.active {
+      color: #111827;
+      animation: pulse 1.2s infinite;
+    }
+    .stage.complete {
+      color: #6366f1;
+    }
+    .stage-arrow {
+      color: #6b7280;
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    /* ---- Loading skeleton ---- */
+    #skeleton {
+      max-width: 720px;
+      margin: 24px auto;
+      display: none;
+    }
+    .skeleton-card {
+      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+      height: 120px;
+      margin: 8px auto;
+      max-width: 720px;
+    }
+
+    /* ---- Results section ---- */
+    #results {
+      max-width: 720px;
+      margin: 24px auto;
+      display: none;
+    }
+
+    /* ---- Pill tab bar ---- */
+    #tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .pill-tab {
+      border-radius: 9999px;
+      padding: 8px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid #e5e7eb;
+      background: #f3f4f6;
+      color: #6b7280;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      min-height: 36px;
+    }
+    .pill-tab:hover:not([aria-selected="true"]) {
+      background: #e5e7eb;
+    }
+
+    /* ---- Result card ---- */
+    #result-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    #hypothesis-text {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #111827;
+    }
+    #confidence-rating {
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #111827;
+    }
+    #evidence-section {
+      margin-top: 8px;
+    }
+    #evidence-toggle {
+      background: none;
+      border: none;
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 0;
+      margin-top: 12px;
+      font-family: inherit;
+    }
+    #evidence-toggle:hover { color: #111827; }
+    #evidence-list {
+      margin-top: 8px;
+      display: none;
+    }
+    #evidence-list h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #6b7280;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+    #evidence-items,
+    #counter-items {
+      list-style: decimal;
+      padding-left: 20px;
+    }
+    #evidence-items li,
+    #counter-items li {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    /* ---- Download bar ---- */
+    #download-bar {
+      display: none;
+      flex-wrap: wrap;
+      gap: 16px;
+      max-width: 720px;
+      margin: 48px auto 0;
+    }
+    .dl-btn {
+      background: #ffffff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.15s, color 0.15s;
+      min-height: 36px;
+    }
+    .dl-btn:hover {
+      border-color: #6366f1;
+      color: #6366f1;
+    }
+
+    /* ---- Charts panel ---- */
+    #charts-panel {
+      max-width: 720px;
+      margin: 32px auto;
+      display: none;
+    }
+    #charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+    }
+    #charts-grid img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    /* ---- Empty state ---- */
+    #empty-state {
+      max-width: 720px;
+      margin: 48px auto;
+      text-align: center;
+      color: #6b7280;
+    }
+    #empty-state h2 {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    #empty-state p {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ---- Responsive: below 640px charts stack ---- */
+    @media (max-width: 640px) {
+      #charts-grid {
+        grid-template-columns: 1fr;
+      }
+      #persona-checkboxes {
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 1. Header bar (fixed, 56px) -->
+  <header>
+    <span class="page-title">Better Call Scout</span>
+    <button id="run-btn">Run Scout</button>
+  </header>
+
+  <!-- 2. Main content area (padded top for fixed header) -->
+  <main>
+    <!-- 2a. Query card -->
+    <section id="query-card">
+      <input
+        type="text"
+        id="query-input"
+        placeholder="Enter a technology topic — e.g. 'WebAssembly runtimes', 'LLM inference', 'edge ML'"
+        autocomplete="off"
+      />
+      <!-- Persona checkboxes — all checked by default -->
+      <div id="persona-checkboxes">
+        <label for="cb-vc"><input type="checkbox" id="cb-vc" checked /> VC</label>
+        <label for="cb-dev"><input type="checkbox" id="cb-dev" checked /> Developer</label>
+        <label for="cb-journalist"><input type="checkbox" id="cb-journalist" checked /> Journalist</label>
+      </div>
+    </section>
+
+    <!-- 2b. Error state (hidden by default) -->
+    <section id="error-state" role="alert">
+      <strong id="error-heading">Pipeline error</strong>
+      <span id="error-body"></span>
+      <button id="retry-btn">Retry Query</button>
+    </section>
+
+    <!-- 2c. SSE progress strip (hidden until run starts) -->
+    <section id="progress-strip" aria-live="polite">
+      <span id="stage-collection" class="stage inactive">Collection</span>
+      <span class="stage-arrow">&#8250;</span>
+      <span id="stage-critic" class="stage inactive">Critic</span>
+      <span class="stage-arrow">&#8250;</span>
+      <span id="stage-analysis" class="stage inactive">Analysis</span>
+      <span class="stage-arrow">&#8250;</span>
+      <span id="stage-synthesis" class="stage inactive">Synthesis</span>
+    </section>
+
+    <!-- 2d. Loading skeleton (hidden by default, shown while SSE in progress) -->
+    <section id="skeleton">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </section>
+
+    <!-- 2e. Results section (hidden until pipeline complete) -->
+    <section id="results">
+      <!-- Persona pill tabs -->
+      <div id="tab-bar" role="tablist">
+        <button class="pill-tab" id="tab-vc" role="tab" aria-selected="true" data-persona="vc_analyst" data-color="#6366f1">VC</button>
+        <button class="pill-tab" id="tab-dev" role="tab" aria-selected="false" data-persona="developer_analyst" data-color="#10b981">Developer</button>
+        <button class="pill-tab" id="tab-journalist" role="tab" aria-selected="false" data-persona="journalist" data-color="#f59e0b">Journalist</button>
+      </div>
+
+      <!-- Result card (one panel, content swaps on tab click) -->
+      <div id="result-card" role="tabpanel">
+        <div id="hypothesis-text"></div>
+        <div id="confidence-rating" aria-label=""></div>
+        <div id="evidence-section">
+          <button id="evidence-toggle" aria-expanded="false" aria-controls="evidence-list">Show evidence &#9660;</button>
+          <div id="evidence-list">
+            <ol id="evidence-items"></ol>
+            <h3>Counter-evidence</h3>
+            <ol id="counter-items"></ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2f. Download bar (hidden until pipeline complete, sits ABOVE charts) -->
+    <section id="download-bar">
+      <button class="dl-btn" id="dl-report">Download Report</button>
+      <button class="dl-btn" id="dl-csv">Download CSV</button>
+      <button class="dl-btn" id="dl-chart1">Chart 1: Star Velocity</button>
+      <button class="dl-btn" id="dl-chart2">Chart 2: Category Heatmap</button>
+      <button class="dl-btn" id="dl-chart3">Chart 3: HN Buzz vs Stars</button>
+      <button class="dl-btn" id="dl-chart4">Chart 4: Persona Scores</button>
+    </section>
+
+    <!-- 2g. Charts panel (hidden until pipeline complete) -->
+    <section id="charts-panel">
+      <div id="charts-grid">
+        <img id="chart1" src="" alt="Star Velocity Chart" loading="lazy" />
+        <img id="chart2" src="" alt="Category Heatmap" loading="lazy" />
+        <img id="chart3" src="" alt="HN Buzz vs Stars" loading="lazy" />
+        <img id="chart4" src="" alt="Persona Scores" loading="lazy" />
+      </div>
+    </section>
+
+    <!-- 2h. Empty state (shown on initial load before any run) -->
+    <section id="empty-state">
+      <h2>No results yet</h2>
+      <p>Enter a topic above and click Run Scout to generate a multi-perspective tech hypothesis.</p>
+    </section>
+  </main>
+
+  <script>
+    // ---- State ----
+    let currentReport = null;
+    let currentSessionId = null;
+    let currentPersona = 'vc_analyst';
+    let lastQuery = '';
+
+    // Persona metadata: maps persona key → tab id, checkbox id, accent color
+    const PERSONA_META = {
+      vc_analyst:         { tabId: 'tab-vc',         cbId: 'cb-vc',         color: '#6366f1' },
+      developer_analyst:  { tabId: 'tab-dev',        cbId: 'cb-dev',        color: '#10b981' },
+      journalist:         { tabId: 'tab-journalist',  cbId: 'cb-journalist', color: '#f59e0b' },
+    };
+
+    // ---- Helpers ----
+
+    function setStage(stageId, state) {
+      // state: 'inactive' | 'active' | 'complete'
+      const el = document.getElementById(stageId);
+      if (!el) return;
+      el.className = 'stage ' + state;
+      const baseName = el.textContent.replace(/^✓\s*/, '');
+      if (state === 'complete') {
+        el.textContent = '✓ ' + baseName;
+      } else {
+        el.textContent = baseName;
+      }
+    }
+
+    function resetStages() {
+      ['stage-collection', 'stage-critic', 'stage-analysis', 'stage-synthesis'].forEach(id => {
+        setStage(id, 'inactive');
+      });
+    }
+
+    function setRunButtonState(running) {
+      const btn = document.getElementById('run-btn');
+      if (running) {
+        btn.textContent = 'Running\u2026';
+        btn.disabled = true;
+        btn.classList.add('disabled');
+      } else {
+        btn.textContent = 'Run Scout';
+        btn.disabled = false;
+        btn.classList.remove('disabled');
+      }
+    }
+
+    function show(id, displayType) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = displayType || 'block';
+    }
+
+    function hide(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    }
+
+    // ---- showError ----
+    function showError(message) {
+      setRunButtonState(false);
+      hide('progress-strip');
+      hide('skeleton');
+      document.getElementById('error-body').textContent = message;
+      const errorEl = document.getElementById('error-state');
+      errorEl.style.display = 'flex';
+    }
+
+    // ---- wireDownloadButtons ----
+    function wireDownloadButtons(sessionId) {
+      const downloads = [
+        ['dl-report',   'scout_report.md'],
+        ['dl-csv',      'top_repos.csv'],
+        ['dl-chart1',   'chart_1.png'],
+        ['dl-chart2',   'chart_2.png'],
+        ['dl-chart3',   'chart_3.png'],
+        ['dl-chart4',   'chart_4.png'],
+      ];
+      downloads.forEach(([btnId, artifact]) => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+          btn.onclick = () => {
+            window.open('/download/' + artifact + '?session_id=' + encodeURIComponent(sessionId), '_blank');
+          };
+        }
+      });
+    }
+
+    // ---- switchTab ----
+    function switchTab(persona) {
+      currentPersona = persona;
+
+      // Update pill tab active styles
+      Object.entries(PERSONA_META).forEach(([key, meta]) => {
+        const tab = document.getElementById(meta.tabId);
+        if (!tab) return;
+        if (key === persona) {
+          tab.setAttribute('aria-selected', 'true');
+          const color = meta.color;
+          // 15% opacity: append '26' to hex color
+          tab.style.background = color + '26';
+          tab.style.color = color;
+          tab.style.borderColor = color;
+          tab.style.borderWidth = '1.5px';
+        } else {
+          tab.setAttribute('aria-selected', 'false');
+          tab.style.background = '';
+          tab.style.color = '';
+          tab.style.borderColor = '';
+          tab.style.borderWidth = '';
+        }
+      });
+
+      if (!currentReport) return;
+
+      const hypothesis = currentReport.hypotheses.find(h => h.persona === persona);
+
+      if (!hypothesis) {
+        document.getElementById('hypothesis-text').textContent =
+          'No hypothesis available for this persona. The analyst returned no output \u2014 try running again.';
+        document.getElementById('confidence-rating').textContent = '';
+        document.getElementById('confidence-rating').setAttribute('aria-label', '');
+        document.getElementById('evidence-items').innerHTML = '';
+        document.getElementById('counter-items').innerHTML = '';
+        return;
+      }
+
+      // Hypothesis text
+      document.getElementById('hypothesis-text').textContent = hypothesis.hypothesis_text;
+
+      // Confidence dot-rating: confidence_score in [0.0, 1.0]
+      const filled = Math.floor((hypothesis.confidence_score * 100) / 20);
+      const pct = Math.round(hypothesis.confidence_score * 100);
+      const dots = '\u25cf'.repeat(filled) + '\u25cb'.repeat(5 - filled);
+      document.getElementById('confidence-rating').textContent = dots + ' ' + pct + '%';
+      document.getElementById('confidence-rating').setAttribute(
+        'aria-label',
+        filled + ' out of 5 confidence'
+      );
+
+      // Reset evidence toggle to collapsed
+      const toggle = document.getElementById('evidence-toggle');
+      const evidenceList = document.getElementById('evidence-list');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.textContent = 'Show evidence \u25bc';
+      evidenceList.style.display = 'none';
+
+      // Populate evidence items
+      const evItems = document.getElementById('evidence-items');
+      evItems.innerHTML = '';
+      (hypothesis.evidence || []).forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        evItems.appendChild(li);
+      });
+
+      // Populate counter-evidence items
+      const counterItems = document.getElementById('counter-items');
+      counterItems.innerHTML = '';
+      (hypothesis.counter_evidence || []).forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        counterItems.appendChild(li);
+      });
+    }
+
+    // ---- renderResults ----
+    function renderResults(report) {
+      currentReport = report;
+
+      // Show results, download bar, charts panel
+      show('results', 'block');
+      show('download-bar', 'flex');
+      show('charts-panel', 'block');
+      hide('empty-state');
+
+      // Hide progress strip after 2s delay
+      setTimeout(() => hide('progress-strip'), 2000);
+
+      // Wire chart image sources
+      if (currentSessionId) {
+        document.getElementById('chart1').src = '/download/chart_1.png?session_id=' + encodeURIComponent(currentSessionId);
+        document.getElementById('chart2').src = '/download/chart_2.png?session_id=' + encodeURIComponent(currentSessionId);
+        document.getElementById('chart3').src = '/download/chart_3.png?session_id=' + encodeURIComponent(currentSessionId);
+        document.getElementById('chart4').src = '/download/chart_4.png?session_id=' + encodeURIComponent(currentSessionId);
+      }
+
+      // Filter visible tabs based on checkbox state
+      Object.entries(PERSONA_META).forEach(([key, meta]) => {
+        const cb = document.getElementById(meta.cbId);
+        const tab = document.getElementById(meta.tabId);
+        if (tab) tab.style.display = (cb && cb.checked) ? '' : 'none';
+      });
+
+      // Switch to vc_analyst by default (or first checked tab)
+      const firstChecked = Object.entries(PERSONA_META).find(([key, meta]) => {
+        const cb = document.getElementById(meta.cbId);
+        return cb && cb.checked;
+      });
+      if (firstChecked) {
+        switchTab(firstChecked[0]);
+      }
+    }
+
+    // ---- runScout ----
+    function runScout() {
+      const query = document.getElementById('query-input').value.trim();
+      if (!query) {
+        showError('Please enter a technology topic before running.');
+        return;
+      }
+
+      lastQuery = query;
+      setRunButtonState(true);
+
+      // Hide old states
+      hide('error-state');
+      hide('empty-state');
+      hide('results');
+      hide('download-bar');
+      hide('charts-panel');
+
+      // Show progress strip and skeleton
+      show('progress-strip', 'flex');
+      show('skeleton', 'block');
+
+      // Reset all stages to inactive
+      resetStages();
+
+      // Open EventSource: GET /stream?query=<encoded>
+      const url = '/stream?query=' + encodeURIComponent(query);
+      const es = new EventSource(url);
+
+      es.addEventListener('collection_started', () => setStage('stage-collection', 'active'));
+      es.addEventListener('collection_complete', () => setStage('stage-collection', 'complete'));
+      es.addEventListener('critic_started', () => setStage('stage-critic', 'active'));
+      es.addEventListener('critic_complete', () => setStage('stage-critic', 'complete'));
+      es.addEventListener('analysis_started', () => setStage('stage-analysis', 'active'));
+      es.addEventListener('analysis_complete', () => setStage('stage-analysis', 'complete'));
+      es.addEventListener('synthesis_started', () => setStage('stage-synthesis', 'active'));
+
+      es.addEventListener('complete', function(e) {
+        // synthesis_complete maps to 'complete' event from server
+        setStage('stage-synthesis', 'complete');
+        es.close();
+        hide('skeleton');
+        setRunButtonState(false);
+        try {
+          const report = JSON.parse(e.data);
+          renderResults(report);
+        } catch (err) {
+          showError('Failed to parse pipeline response: ' + err.message);
+        }
+      });
+
+      // synthesis_complete event (emitted by server as event name synthesis_complete)
+      es.addEventListener('synthesis_complete', function(e) {
+        setStage('stage-synthesis', 'complete');
+        es.close();
+        hide('skeleton');
+        setRunButtonState(false);
+        try {
+          const report = JSON.parse(e.data);
+          renderResults(report);
+        } catch (err) {
+          showError('Failed to parse pipeline response: ' + err.message);
+        }
+      });
+
+      es.addEventListener('session_id', function(e) {
+        currentSessionId = e.data;
+        wireDownloadButtons(currentSessionId);
+        // Also update chart src if results are already displayed
+        if (currentReport) {
+          document.getElementById('chart1').src = '/download/chart_1.png?session_id=' + encodeURIComponent(currentSessionId);
+          document.getElementById('chart2').src = '/download/chart_2.png?session_id=' + encodeURIComponent(currentSessionId);
+          document.getElementById('chart3').src = '/download/chart_3.png?session_id=' + encodeURIComponent(currentSessionId);
+          document.getElementById('chart4').src = '/download/chart_4.png?session_id=' + encodeURIComponent(currentSessionId);
+        }
+      });
+
+      es.addEventListener('error_event', function(e) {
+        es.close();
+        setRunButtonState(false);
+        showError(e.data || 'An unexpected error occurred. Please try again.');
+      });
+
+      es.onerror = function() {
+        // Only trigger if not already closed
+        if (es.readyState !== EventSource.CLOSED) {
+          es.close();
+          setRunButtonState(false);
+          showError('Connection to server lost. Please try again.');
+        }
+      };
+    }
+
+    // ---- DOMContentLoaded ----
+    document.addEventListener('DOMContentLoaded', function() {
+      // Run button
+      document.getElementById('run-btn').addEventListener('click', runScout);
+
+      // Retry button
+      document.getElementById('retry-btn').addEventListener('click', function() {
+        hide('error-state');
+        // Restore the query input to lastQuery
+        if (lastQuery) document.getElementById('query-input').value = lastQuery;
+        runScout();
+      });
+
+      // Evidence toggle
+      document.getElementById('evidence-toggle').addEventListener('click', function() {
+        const list = document.getElementById('evidence-list');
+        const expanded = this.getAttribute('aria-expanded') === 'true';
+        if (expanded) {
+          list.style.display = 'none';
+          this.setAttribute('aria-expanded', 'false');
+          this.textContent = 'Show evidence \u25bc';
+        } else {
+          list.style.display = 'block';
+          this.setAttribute('aria-expanded', 'true');
+          this.textContent = 'Hide evidence \u25b2';
+        }
+      });
+
+      // Tab bar click listeners
+      document.querySelectorAll('.pill-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          document.querySelectorAll('.pill-tab').forEach(t => t.setAttribute('aria-selected', 'false'));
+          this.setAttribute('aria-selected', 'true');
+          switchTab(this.dataset.persona);
+        });
+      });
+
+      // Persona checkbox change listeners
+      const cbPersonaMap = {
+        'cb-vc':         'vc_analyst',
+        'cb-dev':        'developer_analyst',
+        'cb-journalist': 'journalist',
+      };
+      Object.entries(cbPersonaMap).forEach(([cbId, persona]) => {
+        const cb = document.getElementById(cbId);
+        if (!cb) return;
+        cb.addEventListener('change', function() {
+          const meta = PERSONA_META[persona];
+          const tab = document.getElementById(meta.tabId);
+          if (tab) tab.style.display = this.checked ? '' : 'none';
+
+          // If the currently active tab was just unchecked, switch to first checked tab
+          if (!this.checked && currentPersona === persona) {
+            const firstChecked = Object.entries(PERSONA_META).find(([key, m]) => {
+              const c = document.getElementById(m.cbId);
+              return c && c.checked;
+            });
+            if (firstChecked) switchTab(firstChecked[0]);
+          }
+        });
+      });
+
+      // Allow pressing Enter in query input to run
+      document.getElementById('query-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') runScout();
+      });
+    });
+  </script>
+</body>
+</html>
