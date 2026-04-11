@@ -29,4 +29,7 @@ journalist_loop = LoopAgent(
     max_iterations=2,
 )
 
-__all__ = ["journalist_generator", "journalist_critic", "journalist_loop"]
+# Alias for orchestrator compatibility
+journalist_analyst_loop = journalist_loop
+
+__all__ = ["journalist_generator", "journalist_critic", "journalist_loop", "journalist_analyst_loop"]
