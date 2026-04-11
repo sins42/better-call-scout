@@ -55,10 +55,10 @@ Exceptions:
 | Body | 16px | 400 | 1.5 | Hypothesis text, evidence list items, description copy |
 | Label | 14px | 600 | 1.4 | Pill tab labels, button labels, confidence badge label, section headers |
 | Heading | 20px | 600 | 1.2 | Persona tab heading, card section titles, progress stage labels |
-| Display | 28px | 700 | 1.1 | Page title in header bar ("Better Call Scout") |
+| Display | 28px | 600 | 1.1 | Page title in header bar ("Better Call Scout") |
 
 Font stack (CSS): `"Inter", "DM Sans", system-ui, sans-serif`
-Google Fonts import: `Inter:wght@400;600;700` and `DM+Sans:wght@400;600;700`
+Google Fonts import: `Inter:wght@400;600` and `DM+Sans:wght@400;600`
 
 ---
 
@@ -94,6 +94,8 @@ Single scrolling page. No routing. No SPA framework. Sections stack vertically i
 6. **Charts panel** — 2×2 CSS grid of 4 `<img>` tags, each fetched from `GET /download/chart_{n}.png`. Collapses to 1-column below 640px breakpoint.
 
 **Source:** CONTEXT.md D-12, D-13, D-14, D-15.
+
+**Focal point:** On initial page load, the primary visual anchor is the query card text input — the header Run Scout button is visible but secondary until input is provided.
 
 ---
 
@@ -158,7 +160,7 @@ Single scrolling page. No routing. No SPA framework. Sections stack vertically i
 ### Error State
 - Displayed inline below query card, above SSE progress strip.
 - Style: background #fef2f2 (red-50), border 1px solid #fca5a5, border-radius: 6px, padding: 12px 16px.
-- Content: error heading at Label 14px weight 600 (#ef4444) + 1-line description (e.g., "GitHub API error — rate limit reached") at Body 16px text-primary. + "Retry" button (same secondary style as download buttons) that re-submits the last query.
+- Content: error heading at Label 14px weight 600 (#ef4444) + 1-line description (e.g., "GitHub API error — rate limit reached") at Body 16px text-primary. + "Retry Query" button (same secondary style as download buttons) that re-submits the last query.
 - Run button is re-enabled when error appears.
 
 **Source:** CONTEXT.md D-08.
@@ -185,7 +187,7 @@ Single scrolling page. No routing. No SPA framework. Sections stack vertically i
 | Empty tab state (persona selected, no data) | "No hypothesis available for this persona. The analyst returned no output — try running again." |
 | Error state heading | "Pipeline error" |
 | Error state body | "{specific error description from API response}. Check your API keys and try again." |
-| Error retry button | "Retry" |
+| Error retry button | "Retry Query" |
 | Download Report button | "Download Report" |
 | Download CSV button | "Download CSV" |
 | Download chart buttons | "Chart 1: Star Velocity", "Chart 2: Category Heatmap", "Chart 3: HN Buzz vs Stars", "Chart 4: Persona Scores" |
