@@ -9,6 +9,9 @@ import asyncio
 import json
 import logging
 import uuid
+
+from dotenv import load_dotenv
+load_dotenv()
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -102,6 +105,13 @@ async def run_pipeline(
             "repo_data_json": json.dumps([]),
             "news_items_json": json.dumps([]),
             "rag_chunks_json": json.dumps([]),
+            # Seed analyst loop state so first-iteration prompts don't raise KeyError
+            "vc_draft_output": "",
+            "vc_critic_output": "",
+            "dev_draft_output": "",
+            "dev_critic_output": "",
+            "journalist_draft_output": "",
+            "journalist_critic_output": "",
         },
     )
 

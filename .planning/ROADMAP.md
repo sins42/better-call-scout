@@ -83,7 +83,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01-PLAN.md — ADK orchestrator wiring: SequentialAgent pipeline, run_pipeline(), generate_artifacts()
+- [x] 04-01-PLAN.md — ADK orchestrator wiring: SequentialAgent pipeline, run_pipeline(), generate_artifacts()
 - [ ] 04-02-PLAN.md — FastAPI app (POST /run, GET /stream, GET /download/{artifact}, GET /) + complete HTML/CSS/JS single-page frontend
 
 ### Phase 5: Deployment + Polish

@@ -11,6 +11,8 @@ Endpoints:
 from __future__ import annotations
 
 import asyncio
+from dotenv import load_dotenv
+load_dotenv()
 import logging
 import uuid
 from pathlib import Path
