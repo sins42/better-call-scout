@@ -13,7 +13,7 @@ Better Call Scout is a multi-agent pipeline that transforms a user query into an
 - [ ] **Phase 1: Data Contracts** - Define shared Pydantic schemas that unblock both teammates
 - [ ] **Phase 2: Collection Layer** - GitHub, HN+Tavily, and RAG agents collect and filter raw data
 - [ ] **Phase 3: Analysis Layer** - Three analyst agents generate critic-refined hypotheses with synthesis and visualizations
-- [ ] **Phase 4: Integration + Frontend** - ADK orchestrator wires the full pipeline; Streamlit UI surfaces results
+- [ ] **Phase 4: Integration + Frontend** - ADK orchestrator wires the full pipeline; FastAPI + HTML/CSS/JS frontend surfaces results
 - [ ] **Phase 5: Deployment + Polish** - Cloud Run deployment, end-to-end testing, project documentation
 
 ## Phase Details
@@ -69,29 +69,29 @@ Plans:
 - [x] 03-02: Synthesis Agent + visualizations
 
 ### Phase 4: Integration + Frontend
-**Goal**: A user can enter a query in a Streamlit UI and receive a complete multi-perspective hypothesis report with charts and downloads
+**Goal**: A user can enter a query in a FastAPI + HTML/CSS/JS frontend and receive a complete multi-perspective hypothesis report with charts and downloads
 **Depends on**: Phase 2, Phase 3
 **Requirements**: ORCH-01, ORCH-02, ORCH-03, FE-01, FE-02, FE-03, FE-04, FE-05, FE-06
 **Success Criteria** (what must be TRUE):
   1. ADK orchestrator wires the full pipeline: Collection (parallel) -> Critic -> Analysis (parallel) -> Synthesis
-  2. User can enter a topic query in the Streamlit input field and select which personas to include
-  3. Progress indicators show pipeline status during execution
-  4. Results display in tabs (one per persona) with the charts panel rendered inline
+  2. User can enter a topic query in the query input field and select which personas to include
+  3. Progress indicators (SSE breadcrumb strip) show pipeline status during execution
+  4. Results display in pill tabs (one per persona) with the charts panel rendered inline
   5. User can download scout_report.md, top_repos.csv, and all 4 PNG charts via download buttons
-**Plans**: TBD
+**Plans**: 2 plans
 **Owner**: Shared (ORCH) + Person 2 (FE)
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01: ADK orchestrator wiring
-- [ ] 04-02: Streamlit frontend
+- [ ] 04-01-PLAN.md — ADK orchestrator wiring: SequentialAgent pipeline, run_pipeline(), generate_artifacts()
+- [ ] 04-02-PLAN.md — FastAPI app (POST /run, GET /stream, GET /download/{artifact}, GET /) + complete HTML/CSS/JS single-page frontend
 
 ### Phase 5: Deployment + Polish
 **Goal**: The application is live on Cloud Run and passes end-to-end validation from query to downloadable report
 **Depends on**: Phase 4
 **Requirements**: DEPLOY-01, DEPLOY-02, DEPLOY-03, DEPLOY-04
 **Success Criteria** (what must be TRUE):
-  1. Docker image builds successfully and runs the Streamlit app on port 8080
+  1. Docker image builds successfully and runs the FastAPI app on port 8080
   2. Cloud Run service is deployed with correct env vars (GITHUB_TOKEN, TAVILY_API_KEY, GOOGLE_CLOUD_PROJECT) and min-instances=1
   3. A user can access the public Cloud Run URL, submit a query, and receive a complete report with all artifacts downloadable
   4. README documents the three pipeline steps, agent responsibilities, elective claims, and how to run locally and on Cloud Run
