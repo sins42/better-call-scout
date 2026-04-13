@@ -4,9 +4,19 @@ Filters raw repo list: removes forks, boilerplate, one-day spikes, spam repos.
 Also used in generator-critic loop with analyst agents.
 """
 import json
+import logging
 from datetime import datetime, timezone
 
 from google.adk.agents.llm_agent import LlmAgent
+from google.genai import types
+
+_RETRY_CONFIG = types.GenerateContentConfig(
+    http_options=types.HttpOptions(
+        retry_options=types.HttpRetryOptions(initial_delay=2, attempts=3),
+    ),
+)
+
+logger = logging.getLogger(__name__)
 
 from src.models.schemas import RepoData  # noqa: F401 — type reference only
 
@@ -31,7 +41,13 @@ async def heuristic_filter(repos_json: str) -> dict:
             rejected (list): Clearly low-quality or fork repos.
             borderline (list): Repos requiring LLM judgment.
     """
-    repos = json.loads(repos_json)
+    logger.info("heuristic_filter: received %d chars of repos_json", len(repos_json))
+    try:
+        repos = json.loads(repos_json)
+    except json.JSONDecodeError as e:
+        logger.error("heuristic_filter: malformed repos_json: %s", e)
+        return {"passed": [], "rejected": [], "borderline": []}
+    logger.info("heuristic_filter: filtering %d repos", len(repos))
     passed = []
     rejected = []
     borderline = []
@@ -72,6 +88,10 @@ async def heuristic_filter(repos_json: str) -> dict:
         # Borderline: everything else (commits 5-20, contributors 1-3, or age < 30 days)
         borderline.append(repo)
 
+    logger.info(
+        "heuristic_filter: passed=%d rejected=%d borderline=%d",
+        len(passed), len(rejected), len(borderline),
+    )
     return {"passed": passed, "rejected": rejected, "borderline": borderline}
 
 
@@ -95,4 +115,5 @@ critic_agent = LlmAgent(
     description="Filters raw repository list, removing forks, boilerplate, and spam.",
     tools=[heuristic_filter],
     output_key="filtered_repos",
+    generate_content_config=_RETRY_CONFIG,
 )

@@ -6,7 +6,7 @@ based on star velocity, funding signals, market size, and competitive landscape.
 from google.adk.agents import LlmAgent, LoopAgent
 
 from src.models.schemas import AnalystHypothesis
-from src.agents.analysis._prompts import GEMINI_MODEL, VC_GENERATOR_PROMPT, VC_CRITIC_PROMPT
+from src.agents.analysis._prompts import GEMINI_MODEL, RETRY_CONFIG, VC_GENERATOR_PROMPT, VC_CRITIC_PROMPT
 
 vc_generator = LlmAgent(
     name="VCAnalystGenerator",
@@ -14,6 +14,7 @@ vc_generator = LlmAgent(
     instruction=VC_GENERATOR_PROMPT,
     output_schema=AnalystHypothesis,
     output_key="vc_draft_output",
+    generate_content_config=RETRY_CONFIG,
 )
 
 vc_critic = LlmAgent(
@@ -21,7 +22,7 @@ vc_critic = LlmAgent(
     model=GEMINI_MODEL,
     instruction=VC_CRITIC_PROMPT,
     output_key="vc_critic_output",
-    # No output_schema on critic — free-text challenge is correct here
+    generate_content_config=RETRY_CONFIG,
 )
 
 vc_analyst_loop = LoopAgent(

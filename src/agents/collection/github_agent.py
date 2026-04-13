@@ -4,6 +4,7 @@ Searches repos by topic/language/stars via GitHub REST API.
 Fetches star history, commit activity, contributor stats, issue velocity.
 """
 import asyncio
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -11,6 +12,8 @@ import requests
 from google.adk.agents.llm_agent import LlmAgent
 
 from src.models.schemas import RepoData  # noqa: F401 — type reference only
+
+logger = logging.getLogger(__name__)
 
 GITHUB_API_BASE = "https://api.github.com"
 _MAX_RETRIES = 3
@@ -104,6 +107,7 @@ async def search_github_repos(
     }
     url = f"{GITHUB_API_BASE}/search/repositories?q={q}&sort=stars&order=desc&per_page=100"
 
+    logger.info("GitHub search: query=%r language=%r min_stars=%d", query, language, min_stars)
     data = await _github_get(url, headers)
     repos = []
     for item in data.get("items", []):
@@ -118,6 +122,7 @@ async def search_github_repos(
                 "created_at": item["created_at"],
             }
         )
+    logger.info("GitHub search returned %d repos for query=%r", len(repos), query)
     return {"repos": repos}
 
 
@@ -139,6 +144,7 @@ async def fetch_repo_details(owner: str, repo: str) -> dict:
             contributors (int): Number of unique contributors.
             issues (int): Number of open issues.
     """
+    logger.info("Fetching repo details for %s/%s", owner, repo)
     auth_headers = {
         "Authorization": f"token {os.environ['GITHUB_TOKEN']}",
         "Accept": "application/vnd.github+json",
@@ -190,6 +196,10 @@ async def fetch_repo_details(owner: str, repo: str) -> dict:
     contributors_data = await _github_get_with_retry(contributors_url, auth_headers)
     contributors = len(contributors_data) if contributors_data else 0
 
+    logger.info(
+        "Repo details %s/%s: velocity=%.3f commits=%d contributors=%d issues=%d",
+        owner, repo, star_velocity, commits, contributors, open_issues,
+    )
     return {
         "star_velocity": star_velocity,
         "commits": commits,

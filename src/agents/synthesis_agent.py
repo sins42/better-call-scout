@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 from google.adk.agents import LlmAgent
-from src.agents.analysis._prompts import GEMINI_MODEL
+from src.agents.analysis._prompts import GEMINI_MODEL, RETRY_CONFIG
 from src.models.schemas import AnalystHypothesis, RepoData, SynthesisReport
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,7 @@ synthesis_agent = LlmAgent(
     instruction=_SYNTHESIS_INSTRUCTION,
     output_schema=SynthesisReport,
     output_key="synthesis_report",
+    generate_content_config=RETRY_CONFIG,
 )
 
 

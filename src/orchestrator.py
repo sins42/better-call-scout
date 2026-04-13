@@ -92,6 +92,7 @@ async def run_pipeline(
 
     await _emit("collection", "started")
     logger.info("Pipeline started for query: %r", query)
+    logger.info("Stage: collection started")
 
     # Seed session state with the query. Collection agents read "query" from state.
     # Analyst prompts read {repo_data_json}, {news_items_json}, {rag_chunks_json}.
@@ -144,6 +145,7 @@ async def run_pipeline(
         author = getattr(event, "author", None)
         if author in stage_start_map and author not in _started_stages:
             stage = stage_start_map[author]
+            logger.info("Stage: %s started (author=%s)", stage, author)
             await _emit(stage, "started")
             _started_stages.add(author)
         if author in _stage_map:
@@ -152,6 +154,7 @@ async def run_pipeline(
             if is_final is not None and (
                 callable(is_final) and is_final() or not callable(is_final) and is_final
             ):
+                logger.info("Stage: %s %s (author=%s)", stage, status, author)
                 await _emit(stage, status)
 
     await _emit("synthesis", "complete")
@@ -167,13 +170,17 @@ async def run_pipeline(
     # Prefer synthesis_agent structured output; fall back to manual assembly.
     synthesis_raw = final_session.state.get("synthesis_report")
     if synthesis_raw:
-        if isinstance(synthesis_raw, dict):
-            report = SynthesisReport.model_validate(synthesis_raw)
-        elif isinstance(synthesis_raw, str):
-            report = SynthesisReport.model_validate_json(synthesis_raw)
-        else:
-            report = synthesis_raw  # already a SynthesisReport instance
-    else:
+        try:
+            if isinstance(synthesis_raw, dict):
+                report = SynthesisReport.model_validate(synthesis_raw)
+            elif isinstance(synthesis_raw, str):
+                report = SynthesisReport.model_validate_json(synthesis_raw)
+            else:
+                report = synthesis_raw  # already a SynthesisReport instance
+        except Exception as exc:
+            logger.warning("synthesis_report parse failed (%s) — falling back to state assembly", exc)
+            synthesis_raw = None  # trigger fallback below
+    if not synthesis_raw:
         # Fallback: assemble from individual analyst output keys.
         repos_raw = final_session.state.get("github_results", "[]")
         if isinstance(repos_raw, str):

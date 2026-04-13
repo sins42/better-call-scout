@@ -18,6 +18,11 @@ import uuid
 from pathlib import Path
 from typing import AsyncGenerator
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+)
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
@@ -92,7 +97,7 @@ async def run_scout(req: RunRequest) -> dict:
         # Add 120s timeout to prevent event-loop starvation (RESEARCH.md T-04-01-02)
         report: SynthesisReport = await asyncio.wait_for(
             run_pipeline(query),
-            timeout=120.0,
+            timeout=300.0,
         )
     except asyncio.TimeoutError:
         logger.error("Pipeline timed out for session_id=%s", session_id)
@@ -154,7 +159,7 @@ async def stream_progress(request: Request, query: str) -> EventSourceResponse:
             try:
                 report = await asyncio.wait_for(
                     run_pipeline(query, progress_cb),
-                    timeout=120.0,
+                    timeout=300.0,
                 )
                 # Store artifacts for download after SSE stream completes
                 session_id = str(uuid.uuid4())

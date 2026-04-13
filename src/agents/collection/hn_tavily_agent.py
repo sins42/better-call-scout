@@ -4,11 +4,21 @@ HN Firebase API for top/best stories.
 Tavily search for founder bios, funding news, job postings.
 """
 import asyncio
+import logging
 import os
 
 import requests
+
+logger = logging.getLogger(__name__)
 from google.adk.agents.llm_agent import LlmAgent
+from google.genai import types
 from tavily import AsyncTavilyClient
+
+_RETRY_CONFIG = types.GenerateContentConfig(
+    http_options=types.HttpOptions(
+        retry_options=types.HttpRetryOptions(initial_delay=2, attempts=3),
+    ),
+)
 
 from src.models.schemas import NewsItem  # noqa: F401 — type reference only
 
@@ -37,15 +47,28 @@ async def fetch_hn_top_stories(limit: int = 30) -> dict:
         resp.raise_for_status()
         return resp.json()[:limit]
 
+    logger.info("Fetching HN top %d story IDs", limit)
     story_ids = await asyncio.to_thread(_fetch_ids)
+    logger.info("Fetching details for %d HN stories", len(story_ids))
 
     async def _fetch_story(sid: int) -> dict | None:
         def _do_fetch(story_id: int = sid) -> dict:
-            resp = requests.get(f"{HN_API_BASE}/item/{story_id}.json", timeout=30)
-            resp.raise_for_status()
-            return resp.json()
+            for attempt in range(3):
+                try:
+                    resp = requests.get(f"{HN_API_BASE}/item/{story_id}.json", timeout=30)
+                    resp.raise_for_status()
+                    return resp.json()
+                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                    if attempt == 2:
+                        raise
+                    import time
+                    time.sleep(0.5 * (attempt + 1))
 
-        story = await asyncio.to_thread(_do_fetch)
+        try:
+            story = await asyncio.to_thread(_do_fetch)
+        except Exception as e:
+            logger.warning("Failed to fetch HN story %d after retries: %s", sid, e)
+            return None
         if story and story.get("type") == "story":
             return {
                 "title": story.get("title", ""),
@@ -60,6 +83,7 @@ async def fetch_hn_top_stories(limit: int = 30) -> dict:
 
     story_results = await asyncio.gather(*[_fetch_story(sid) for sid in story_ids])
     stories = [s for s in story_results if s is not None]
+    logger.info("HN fetch complete: %d/%d stories retrieved", len(stories), len(story_ids))
     return {"stories": stories}
 
 
@@ -83,6 +107,7 @@ async def search_tavily_news(query: str, max_results: int = 5) -> dict:
     if not api_key:
         return {"results": [], "fallback": True}
 
+    logger.info("Tavily search: query=%r max_results=%d", query, max_results)
     try:
         client = AsyncTavilyClient(api_key)
         response = await client.search(
@@ -102,8 +127,10 @@ async def search_tavily_news(query: str, max_results: int = 5) -> dict:
                     "published_date": r.get("published_date"),
                 }
             )
+        logger.info("Tavily returned %d results for query=%r", len(results), query)
         return {"results": results}
     except Exception as e:
+        logger.warning("Tavily search failed for query=%r: %s", query, e)
         return {"results": [], "fallback": True, "error": str(e)}
 
 
@@ -118,4 +145,5 @@ hn_tavily_agent = LlmAgent(
     description="Fetches HN stories and Tavily news for a given topic.",
     tools=[fetch_hn_top_stories, search_tavily_news],
     output_key="hn_tavily_results",
+    generate_content_config=_RETRY_CONFIG,
 )

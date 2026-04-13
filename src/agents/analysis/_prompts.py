@@ -5,9 +5,21 @@ Each critic prompt is adversarial and receives only the prior draft for challeng
 """
 import os
 
+from google.genai import types
+
 # Configurable model name — override via GEMINI_MODEL env var if gemini-2.0-flash
 # is unavailable in your GCP project (use "gemini-2.5-flash" for newer projects).
 GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+
+# Shared retry config for all LlmAgents — handles 429 RESOURCE_EXHAUSTED from Vertex AI.
+# initial_delay=2s, attempts=3 gives up to ~6s of retry window before failing.
+# max_output_tokens=8192 prevents SynthesisReport JSON from being truncated mid-response.
+RETRY_CONFIG = types.GenerateContentConfig(
+    max_output_tokens=8192,
+    http_options=types.HttpOptions(
+        retry_options=types.HttpRetryOptions(initial_delay=2, attempts=3),
+    ),
+)
 
 VC_GENERATOR_PROMPT: str = """You are a decisive, contrarian VC analyst scouting for breakout tech opportunities.
 Your primary edge is identifying signals before the mainstream. You take strong positions even when evidence is mixed.
@@ -41,8 +53,8 @@ If there is critic feedback, address the specific objections raised. Do not repe
 Return a JSON object conforming exactly to AnalystHypothesis. Fields:
 - persona (must be "vc_analyst")
 - confidence_score (0.0-1.0)
-- evidence (list of strings)
-- counter_evidence (list of strings)
+- evidence (list of strings) — signals that SUPPORT your hypothesis_text, whether bullish or bearish
+- counter_evidence (list of strings) — signals that CONTRADICT your hypothesis_text and could prove you wrong
 - reasoning (string)
 - hypothesis_text (string)
 No extra keys."""
@@ -95,8 +107,8 @@ If there is critic feedback, address the specific objections raised. Do not repe
 Return a JSON object conforming exactly to AnalystHypothesis. Fields:
 - persona (must be "developer_analyst")
 - confidence_score (0.0-1.0)
-- evidence (list of strings)
-- counter_evidence (list of strings)
+- evidence (list of strings) — signals that SUPPORT your hypothesis_text, whether bullish or bearish
+- counter_evidence (list of strings) — signals that CONTRADICT your hypothesis_text and could prove you wrong
 - reasoning (string)
 - hypothesis_text (string)
 No extra keys."""
@@ -149,8 +161,8 @@ If there is critic feedback, address the specific objections raised. Do not repe
 Return a JSON object conforming exactly to AnalystHypothesis. Fields:
 - persona (must be "journalist")
 - confidence_score (0.0-1.0)
-- evidence (list of strings)
-- counter_evidence (list of strings)
+- evidence (list of strings) — signals that SUPPORT your hypothesis_text, whether bullish or bearish
+- counter_evidence (list of strings) — signals that CONTRADICT your hypothesis_text and could prove you wrong
 - reasoning (string)
 - hypothesis_text (string)
 No extra keys."""
