@@ -18,6 +18,8 @@ import uuid
 from pathlib import Path
 from typing import AsyncGenerator
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -26,10 +28,24 @@ from sse_starlette.sse import EventSourceResponse
 
 from src.orchestrator import generate_artifacts, run_pipeline
 from src.models.schemas import SynthesisReport
+from src.rag.ingestion import get_chroma_collection, ingest_hn_stories
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Better Call Scout", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    collection = get_chroma_collection()
+    if collection.count() == 0:
+        logger.info("ChromaDB is empty — ingesting HN stories...")
+        count = await ingest_hn_stories()
+        logger.info("Ingested %d chunks into ChromaDB", count)
+    else:
+        logger.info("ChromaDB already has %d chunks — skipping ingestion", collection.count())
+    yield
+
+
+app = FastAPI(title="Better Call Scout", version="1.0.0", lifespan=lifespan)
 
 # In-memory artifact store: {session_id: {artifact_name: bytes | str}}
 # Keyed by session_id UUID to prevent concurrent request contamination (RESEARCH.md Pitfall 7).
