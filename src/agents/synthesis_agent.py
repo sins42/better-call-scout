@@ -45,6 +45,8 @@ Example structure:
 
 IMPORTANT: The hypotheses list must contain all 3 analyst hypothesis objects as provided above,
 with their persona fields set to "vc_analyst", "developer_analyst", and "journalist" respectively.
+Preserve ALL fields from each analyst object exactly as given, including the sources list.
+Do NOT drop or omit the sources field — it must be copied through unchanged.
 The top_repos list must include the top repositories from the data.
 """
 
