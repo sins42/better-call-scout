@@ -4,482 +4,993 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Better Call Scout</title>
-  <!-- Google Fonts: Inter + DM Sans -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ---- Reset & Base ---- */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
+    html { font-size: 16px; scroll-behavior: smooth; }
     body {
-      font-family: "Inter", "DM Sans", system-ui, sans-serif;
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 1.5;
-      color: #111827;
-      background: #ffffff;
+      font-family: "Inter", system-ui, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      line-height: 1.6;
+      min-height: 100vh;
     }
 
-    /* ---- Keyframes ---- */
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
+    /* ---- Animations ---- */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin { to{transform:rotate(360deg)} }
 
-    /* ---- Header (fixed 56px) ---- */
-    header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 56px;
-      background: #ffffff;
-      border-bottom: 1px solid #e5e7eb;
+    /* ---- Nav ---- */
+    nav {
+      background: #0f172a;
+      padding: 0 32px;
+      height: 52px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      z-index: 100;
+      gap: 10px;
     }
-    .page-title {
-      font-size: 28px;
-      font-weight: 600;
-      line-height: 1.1;
-      color: #111827;
+    .nav-logo {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.3px;
     }
-    #run-btn {
+    .nav-badge {
       background: #6366f1;
-      color: #ffffff;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 14px;
+      color: #fff;
+      font-size: 10px;
       font-weight: 600;
-      border: none;
-      cursor: pointer;
-      min-height: 36px;
-      font-family: inherit;
-      transition: opacity 0.15s;
-    }
-    #run-btn:hover:not(:disabled) {
-      opacity: 0.9;
-    }
-    #run-btn:disabled,
-    #run-btn.disabled {
-      opacity: 0.6;
-      pointer-events: none;
+      padding: 2px 7px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
     }
 
-    /* ---- Main content ---- */
-    main {
-      padding-top: 56px;
-      padding-bottom: 64px;
+    /* ---- Hero ---- */
+    #hero {
+      background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%);
+      padding: 64px 24px 72px;
+      text-align: center;
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      background: rgba(99,102,241,.18);
+      color: #a5b4fc;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(165,180,252,.2);
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      margin-bottom: 14px;
+    }
+    .hero-title span { color: #a5b4fc; }
+    .hero-subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      max-width: 520px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
     }
 
-    /* ---- Query card ---- */
-    #query-card {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 16px;
-      margin: 24px auto;
-      max-width: 720px;
+    /* ---- Search box ---- */
+    #search-wrap {
+      max-width: 620px;
+      margin: 0 auto 20px;
+      position: relative;
     }
     #query-input {
       width: 100%;
       font-size: 16px;
       font-family: inherit;
-      padding: 10px 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
+      padding: 16px 56px 16px 20px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.07);
+      color: #fff;
       outline: none;
-      color: #111827;
-      background: #ffffff;
+      transition: border-color .2s, background .2s;
     }
+    #query-input::placeholder { color: #64748b; }
     #query-input:focus {
       border-color: #6366f1;
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+      background: rgba(255,255,255,.1);
     }
-    #persona-checkboxes {
-      display: flex;
-      gap: 24px;
-      margin-top: 16px;
-    }
-    #persona-checkboxes label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    #run-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
       font-size: 14px;
       font-weight: 600;
-      color: #111827;
+      font-family: inherit;
       cursor: pointer;
-      min-height: 44px;
+      transition: background .15s, opacity .15s;
+      white-space: nowrap;
     }
-    #persona-checkboxes input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
+    #run-btn:hover:not(:disabled) { background: #4f46e5; }
+    #run-btn:disabled { opacity: .5; cursor: not-allowed; }
+    #char-counter {
+      text-align: right;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+      transition: color .15s;
+    }
+    #char-counter.warn { color: #f59e0b; }
+    #char-counter.over { color: #ef4444; font-weight: 600; }
+
+    /* ---- Example pills ---- */
+    .example-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+    .example-pills span {
+      font-size: 11px;
+      color: #64748b;
+      align-self: center;
+      margin-right: 2px;
+    }
+    .pill {
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      color: #cbd5e1;
+      font-size: 13px;
+      padding: 5px 14px;
+      border-radius: 999px;
       cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      font-family: inherit;
+    }
+    .pill:hover {
+      background: rgba(99,102,241,.25);
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+
+    /* ---- Persona selector ---- */
+    .persona-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      margin-bottom: 12px;
+    }
+    #persona-cards {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .persona-card {
+      background: rgba(255,255,255,.06);
+      border: 1.5px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: all .18s;
+      text-align: left;
+      min-width: 150px;
+      user-select: none;
+      position: relative;
+    }
+    .persona-card.selected {
+      border-color: var(--pcolor);
+      background: rgba(var(--prgb), .12);
+    }
+    .persona-card .p-icon { font-size: 22px; margin-bottom: 6px; }
+    .persona-card .p-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .persona-card.selected .p-name { color: var(--pcolor); }
+    .persona-card .p-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .persona-card .p-check {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: transparent;
+    }
+    .persona-card.selected .p-check {
+      background: var(--pcolor);
+      border-color: var(--pcolor);
+      color: #fff;
+    }
+    /* Hidden checkboxes kept for JS compatibility */
+    #cb-vc, #cb-dev, #cb-journalist { display: none; }
+
+    /* ---- How it works ---- */
+    #how-it-works {
+      display: flex;
+      gap: 0;
+      justify-content: center;
+      margin-top: 48px;
+      max-width: 580px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .how-step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+    }
+    .how-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 16px;
+      right: -12px;
+      width: 24px;
+      height: 1px;
+      background: rgba(255,255,255,.15);
+    }
+    .how-step .s-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(99,102,241,.2);
+      border: 1px solid rgba(99,102,241,.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px;
+      font-size: 14px;
+    }
+    .how-step .s-label {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    /* ---- Main content wrapper ---- */
+    #content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
     }
 
     /* ---- Error state ---- */
     #error-state {
-      background: #fef2f2;
-      border: 1px solid #fca5a5;
-      border-radius: 6px;
-      padding: 12px 16px;
-      max-width: 720px;
-      margin: 16px auto;
       display: none;
       align-items: flex-start;
-      gap: 8px;
+      gap: 12px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 28px;
       flex-wrap: wrap;
+      animation: fadeIn .25s ease;
     }
-    #error-heading {
-      font-size: 14px;
-      font-weight: 600;
-      color: #ef4444;
-      flex-shrink: 0;
-    }
-    #error-body {
-      font-size: 14px;
-      color: #111827;
-      flex: 1;
-      min-width: 200px;
-    }
+    .error-icon { font-size: 18px; flex-shrink: 0; }
+    #error-body { font-size: 14px; color: #0f172a; flex: 1; min-width: 180px; }
     #retry-btn {
       background: #ef4444;
-      color: #ffffff;
+      color: #fff;
       border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 14px;
+      border-radius: 7px;
+      padding: 6px 14px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
       flex-shrink: 0;
     }
-    #retry-btn:hover { opacity: 0.9; }
+    #retry-btn:hover { background: #dc2626; }
 
-    /* ---- SSE progress strip ---- */
+    /* ---- Progress stepper ---- */
     #progress-strip {
       display: none;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 36px;
+      animation: fadeIn .3s ease;
+    }
+    .progress-header {
+      display: flex;
       align-items: center;
-      gap: 12px;
-      background: #f3f4f6;
-      padding: 12px 24px;
-      border-radius: 8px;
-      margin: 24px auto;
-      max-width: 720px;
-      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    .stage {
-      font-size: 20px;
+    .progress-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #e2e8f0;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    .progress-label {
+      font-size: 14px;
       font-weight: 600;
-      line-height: 1.2;
-      transition: color 0.2s;
+      color: #0f172a;
     }
-    .stage.inactive {
-      color: #6b7280;
+    .progress-sublabel {
+      font-size: 13px;
+      color: #64748b;
+      margin-left: auto;
     }
-    .stage.active {
-      color: #111827;
-      animation: pulse 1.2s infinite;
+    #stepper {
+      display: flex;
+      gap: 0;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
     }
-    .stage.complete {
-      color: #6366f1;
+    .step {
+      flex: 1;
+      padding: 14px 16px;
+      border-right: 1px solid #e2e8f0;
+      transition: background .2s;
     }
-    .stage-arrow {
-      color: #6b7280;
-      font-size: 20px;
-      font-weight: 400;
+    .step:last-child { border-right: none; }
+    .step-num {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 4px;
     }
+    .step-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+    .step.active { background: #fafafe; }
+    .step.active .step-name { color: #6366f1; animation: pulse 1.2s infinite; }
+    .step.active .step-num { color: #6366f1; }
+    .step.done { background: #f0fdf4; }
+    .step.done .step-name { color: #16a34a; }
+    .step.done .step-name::before { content: '✓ '; }
+    .step.done .step-num { color: #16a34a; }
 
-    /* ---- Loading skeleton ---- */
-    #skeleton {
-      max-width: 720px;
-      margin: 24px auto;
-      display: none;
-    }
-    .skeleton-card {
-      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    /* ---- Skeleton ---- */
+    #skeleton { display: none; margin-top: 24px; }
+    .skel {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
       background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 8px;
-      height: 120px;
-      margin: 8px auto;
-      max-width: 720px;
+      animation: shimmer 1.4s infinite;
+      border-radius: 10px;
+      margin-bottom: 10px;
     }
 
-    /* ---- Results section ---- */
-    #results {
-      max-width: 720px;
-      margin: 24px auto;
-      display: none;
-    }
+    /* ---- Results ---- */
+    #results { display: none; margin-top: 36px; animation: fadeIn .35s ease; }
 
-    /* ---- Pill tab bar ---- */
+    .section-heading {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      margin-bottom: 14px;
+    }
+    .result-query-banner {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .rqb-label { font-size: 12px; color: #64748b; font-weight: 500; }
+    .rqb-query { font-size: 15px; font-weight: 600; color: #0f172a; }
+
+    /* ---- Persona tabs ---- */
     #tab-bar {
       display: flex;
       gap: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .pill-tab {
-      border-radius: 9999px;
-      padding: 8px 20px;
-      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 10px;
+      padding: 9px 18px;
+      font-size: 13px;
       font-weight: 600;
-      border: 1px solid #e5e7eb;
-      background: #f3f4f6;
-      color: #6b7280;
+      border: 1.5px solid #e2e8f0;
+      background: #fff;
+      color: #64748b;
       cursor: pointer;
       font-family: inherit;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-      min-height: 36px;
+      transition: all .15s;
     }
-    .pill-tab:hover:not([aria-selected="true"]) {
-      background: #e5e7eb;
+    .pill-tab .tab-icon { font-size: 16px; }
+    .pill-tab:hover:not([aria-selected="true"]) { border-color: #cbd5e1; color: #0f172a; }
+    .pill-tab[aria-selected="true"] {
+      border-color: var(--tcolor, #6366f1);
+      background: color-mix(in srgb, var(--tcolor, #6366f1) 8%, #fff);
+      color: var(--tcolor, #6366f1);
     }
 
     /* ---- Result card ---- */
     #result-card {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 24px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+    .result-card-header {
+      padding: 16px 22px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .persona-label-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .persona-label-tag .tag-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--pcolor, #6366f1);
+      flex-shrink: 0;
+    }
+    .confidence-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .conf-bar-wrap {
+      width: 80px;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .conf-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--pcolor, #6366f1);
+      transition: width .4s ease;
+    }
+    .result-card-body {
+      padding: 20px 22px;
     }
     #hypothesis-text {
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 1.5;
-      color: #111827;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #1e293b;
     }
-    #confidence-rating {
-      margin-top: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      font-family: inherit;
-      color: #111827;
-    }
-    #evidence-section {
-      margin-top: 8px;
-    }
+    #evidence-section { margin-top: 18px; }
     #evidence-toggle {
-      background: none;
-      border: none;
-      color: #6b7280;
-      font-size: 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 7px;
+      color: #64748b;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      padding: 8px 0;
-      margin-top: 12px;
+      padding: 7px 14px;
       font-family: inherit;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    #evidence-toggle:hover { color: #111827; }
+    #evidence-toggle:hover { background: #f1f5f9; color: #0f172a; }
     #evidence-list {
-      margin-top: 8px;
       display: none;
+      margin-top: 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px 18px;
     }
     #evidence-list h3 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 8px;
+      margin-top: 14px;
+    }
+    #evidence-list h3:first-child { margin-top: 0; }
+    #evidence-items, #counter-items {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #evidence-items li::before { content: '↳ '; color: #10b981; font-weight: 700; }
+    #counter-items li::before { content: '↳ '; color: #f59e0b; font-weight: 700; }
+    #evidence-items li, #counter-items li {
       font-size: 14px;
-      font-weight: 600;
-      color: #6b7280;
-      margin-top: 12px;
-      margin-bottom: 4px;
-    }
-    #evidence-items,
-    #counter-items {
-      list-style: decimal;
-      padding-left: 20px;
-    }
-    #evidence-items li,
-    #counter-items li {
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 1.5;
-      color: #111827;
-      margin-bottom: 4px;
+      color: #334155;
+      line-height: 1.6;
     }
 
-    /* ---- Download bar ---- */
-    #download-bar {
-      display: none;
-      flex-wrap: wrap;
-      gap: 16px;
-      max-width: 720px;
-      margin: 48px auto 0;
-    }
-    .dl-btn {
-      background: #ffffff;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #111827;
-      cursor: pointer;
-      font-family: inherit;
-      transition: border-color 0.15s, color 0.15s;
-      min-height: 36px;
-    }
-    .dl-btn:hover {
-      border-color: #6366f1;
-      color: #6366f1;
-    }
-
-    /* ---- Charts panel ---- */
-    #charts-panel {
-      max-width: 720px;
-      margin: 32px auto;
-      display: none;
-    }
+    /* ---- Charts ---- */
+    #charts-panel { display: none; margin-top: 36px; animation: fadeIn .35s ease; }
     #charts-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 32px;
+      gap: 16px;
     }
-    #charts-grid img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    .chart-wrap {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+
+    /* ---- Downloads ---- */
+    #download-bar {
+      display: none;
+      margin-top: 36px;
+      animation: fadeIn .35s ease;
+    }
+    .dl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .dl-btn {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dl-btn .dl-icon { font-size: 16px; flex-shrink: 0; }
+    .dl-btn:hover {
+      border-color: #6366f1;
+      color: #6366f1;
+      background: #fafafe;
     }
 
     /* ---- Empty state ---- */
     #empty-state {
-      max-width: 720px;
-      margin: 48px auto;
+      max-width: 480px;
+      margin: 60px auto;
       text-align: center;
-      color: #6b7280;
+      padding: 0 24px;
     }
-    #empty-state h2 {
-      font-size: 20px;
+    .empty-icon { font-size: 40px; margin-bottom: 16px; }
+    #empty-state h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    #empty-state p { font-size: 14px; color: #64748b; line-height: 1.7; }
+
+    /* ---- Hidden checkboxes ---- */
+    #confidence-rating { display: none; }
+
+    /* ---- Top repos cards ---- */
+    #top-repos-panel { display: none; margin-top: 24px; animation: fadeIn .35s ease; }
+    #repos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .repo-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .repo-card-name {
+      font-size: 13px;
       font-weight: 600;
-      line-height: 1.2;
-      color: #111827;
-      margin-bottom: 8px;
+      color: #6366f1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-decoration: none;
     }
-    #empty-state p {
-      font-size: 16px;
+    .repo-card-name:hover { text-decoration: underline; }
+    .repo-card-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .repo-card-meta span { display: flex; align-items: center; gap: 3px; }
+    .repo-growth { font-weight: 600; }
+    .repo-growth.pos { color: #10b981; }
+    .repo-growth.neg { color: #ef4444; }
+    .lang-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 500;
+    }
+
+    .chart-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 8px;
+      text-align: center;
       line-height: 1.5;
     }
 
-    /* ---- Responsive: below 640px charts stack ---- */
+    /* ---- Heatmap panel ---- */
+    #heatmap-panel { display: none; margin-top: 16px; animation: fadeIn .35s ease; }
+    #heatmap-panel img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* ---- Full report panel ---- */
+    #full-report-panel {
+      display: none;
+      margin-top: 36px;
+      animation: fadeIn .35s ease;
+    }
+    .report-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    #report-toggle-btn {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    #report-toggle-btn:hover { border-color: #6366f1; color: #6366f1; }
+    #full-report-body {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 28px 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+      overflow: hidden;
+    }
+    /* Markdown styles */
+    #full-report-body h1 { font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    #full-report-body h2 { font-size: 17px; font-weight: 700; color: #0f172a; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9; }
+    #full-report-body h3 { font-size: 14px; font-weight: 700; color: #334155; margin: 16px 0 6px; }
+    #full-report-body p { font-size: 14px; color: #334155; line-height: 1.7; margin-bottom: 10px; }
+    #full-report-body strong { color: #0f172a; }
+    #full-report-body ul, #full-report-body ol { padding-left: 20px; margin-bottom: 10px; }
+    #full-report-body li { font-size: 14px; color: #334155; line-height: 1.7; margin-bottom: 3px; }
+    #full-report-body hr { border: none; border-top: 1px solid #f1f5f9; margin: 20px 0; }
+    #full-report-body table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; }
+    #full-report-body th { background: #f8fafc; font-weight: 600; color: #64748b; text-align: left; padding: 8px 12px; border: 1px solid #e2e8f0; }
+    #full-report-body td { padding: 7px 12px; border: 1px solid #e2e8f0; color: #334155; }
+    #full-report-body td:nth-child(2), #full-report-body td:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; }
+    #full-report-body a { color: #6366f1; text-decoration: none; }
+    #full-report-body a:hover { text-decoration: underline; }
+
+    /* ---- Responsive ---- */
     @media (max-width: 640px) {
-      #charts-grid {
-        grid-template-columns: 1fr;
-      }
-      #persona-checkboxes {
-        flex-wrap: wrap;
-        gap: 12px;
-      }
+      #charts-grid { grid-template-columns: 1fr; }
+      #persona-cards { flex-direction: column; align-items: stretch; }
+      .persona-card { min-width: unset; }
+      #how-it-works { display: none; }
+      #stepper { flex-direction: column; }
+      .step { border-right: none; border-bottom: 1px solid #e2e8f0; }
+      .step:last-child { border-bottom: none; }
+      .dl-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
 <body>
-  <!-- 1. Header bar (fixed, 56px) -->
-  <header>
-    <span class="page-title">Better Call Scout</span>
-    <button id="run-btn">Run Scout</button>
-  </header>
 
-  <!-- 2. Main content area (padded top for fixed header) -->
-  <main>
-    <!-- 2a. Query card -->
-    <section id="query-card">
-      <input
-        type="text"
-        id="query-input"
-        placeholder="Enter a technology topic — e.g. 'WebAssembly runtimes', 'LLM inference', 'edge ML'"
-        autocomplete="off"
-      />
-      <!-- Persona checkboxes — all checked by default -->
-      <div id="persona-checkboxes">
-        <label for="cb-vc"><input type="checkbox" id="cb-vc" checked /> VC</label>
-        <label for="cb-dev"><input type="checkbox" id="cb-dev" checked /> Developer</label>
-        <label for="cb-journalist"><input type="checkbox" id="cb-journalist" checked /> Journalist</label>
+  <!-- Nav -->
+  <nav>
+    <span class="nav-logo">Better Call Scout</span>
+    <span class="nav-badge">Beta</span>
+  </nav>
+
+  <!-- Hero -->
+  <section id="hero">
+    <p class="hero-eyebrow">Multi-agent tech intelligence</p>
+    <h1 class="hero-title">Analyze any tech topic from<br><span>3 expert perspectives</span></h1>
+    <p class="hero-subtitle">Enter a technology topic. Scout collects data from GitHub, Hacker News, and research papers — then analyzes it as a VC, developer, and journalist.</p>
+
+    <div id="search-wrap">
+      <input type="text" id="query-input" placeholder="e.g. WebAssembly runtimes, LLM inference, edge ML…" autocomplete="off" maxlength="500" />
+      <button id="run-btn">Scout →</button>
+    </div>
+    <div id="char-counter">0 / 500</div>
+
+    <div class="example-pills">
+      <span>Try:</span>
+      <button class="pill" onclick="setExample('edge ML')">edge ML</button>
+      <button class="pill" onclick="setExample('WebAssembly runtimes')">WebAssembly runtimes</button>
+      <button class="pill" onclick="setExample('LLM inference')">LLM inference</button>
+      <button class="pill" onclick="setExample('vector databases')">vector databases</button>
+      <button class="pill" onclick="setExample('Rust systems programming')">Rust systems</button>
+    </div>
+
+    <p class="persona-label">Analyze from perspectives:</p>
+    <div id="persona-cards">
+      <div class="persona-card selected" id="pcard-vc" style="--pcolor:#6366f1;--prgb:99,102,241" onclick="togglePersona('vc')">
+        <div class="p-check">✓</div>
+        <div class="p-icon">💼</div>
+        <div class="p-name">VC Analyst</div>
+        <div class="p-desc">Market signals & investment potential</div>
       </div>
-    </section>
+      <div class="persona-card selected" id="pcard-dev" style="--pcolor:#10b981;--prgb:16,185,129" onclick="togglePersona('dev')">
+        <div class="p-check">✓</div>
+        <div class="p-icon">💻</div>
+        <div class="p-name">Developer</div>
+        <div class="p-desc">Technical depth & ecosystem maturity</div>
+      </div>
+      <div class="persona-card selected" id="pcard-journalist" style="--pcolor:#f59e0b;--prgb:245,158,11" onclick="togglePersona('journalist')">
+        <div class="p-check">✓</div>
+        <div class="p-icon">📰</div>
+        <div class="p-name">Journalist</div>
+        <div class="p-desc">Narrative, hype, and public interest</div>
+      </div>
+    </div>
 
-    <!-- 2b. Error state (hidden by default) -->
+    <!-- Hidden checkboxes for JS compatibility -->
+    <input type="checkbox" id="cb-vc" checked />
+    <input type="checkbox" id="cb-dev" checked />
+    <input type="checkbox" id="cb-journalist" checked />
+
+    <div id="how-it-works">
+      <div class="how-step">
+        <div class="s-icon">🔍</div>
+        <div class="s-label">Collect</div>
+      </div>
+      <div class="how-step">
+        <div class="s-icon">🎯</div>
+        <div class="s-label">Filter</div>
+      </div>
+      <div class="how-step">
+        <div class="s-icon">🧠</div>
+        <div class="s-label">Analyze</div>
+      </div>
+      <div class="how-step">
+        <div class="s-icon">📊</div>
+        <div class="s-label">Synthesize</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Content -->
+  <div id="content">
+
+    <!-- Error -->
     <section id="error-state" role="alert">
-      <strong id="error-heading">Pipeline error</strong>
+      <span class="error-icon">⚠️</span>
       <span id="error-body"></span>
-      <button id="retry-btn">Retry Query</button>
+      <button id="retry-btn">Try again</button>
     </section>
 
-    <!-- 2c. SSE progress strip (hidden until run starts) -->
+    <!-- Progress -->
     <section id="progress-strip" aria-live="polite">
-      <span id="stage-collection" class="stage inactive">Collection</span>
-      <span class="stage-arrow">&#8250;</span>
-      <span id="stage-critic" class="stage inactive">Critic</span>
-      <span class="stage-arrow">&#8250;</span>
-      <span id="stage-analysis" class="stage inactive">Analysis</span>
-      <span class="stage-arrow">&#8250;</span>
-      <span id="stage-synthesis" class="stage inactive">Synthesis</span>
+      <div class="progress-header">
+        <div class="progress-spinner"></div>
+        <span class="progress-label">Running scout pipeline…</span>
+        <span class="progress-sublabel">Takes ~2–3 min &nbsp;·&nbsp; <span id="elapsed-timer">0:00</span></span>
+      </div>
+      <div id="stepper">
+        <div class="step" id="stage-collection">
+          <div class="step-num">Step 1</div>
+          <div class="step-name">Collecting data</div>
+        </div>
+        <div class="step" id="stage-critic">
+          <div class="step-num">Step 2</div>
+          <div class="step-name">Filtering repos</div>
+        </div>
+        <div class="step" id="stage-analysis">
+          <div class="step-num">Step 3</div>
+          <div class="step-name">Analyzing signals</div>
+        </div>
+        <div class="step" id="stage-synthesis">
+          <div class="step-num">Step 4</div>
+          <div class="step-name">Synthesizing report</div>
+        </div>
+      </div>
     </section>
 
-    <!-- 2d. Loading skeleton (hidden by default, shown while SSE in progress) -->
+    <!-- Skeleton -->
     <section id="skeleton">
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
+      <div class="skel" style="height:52px;margin-top:24px"></div>
+      <div class="skel" style="height:160px;margin-top:10px"></div>
+      <div class="skel" style="height:100px;margin-top:10px;opacity:.6"></div>
     </section>
 
-    <!-- 2e. Results section (hidden until pipeline complete) -->
+    <!-- Results -->
     <section id="results">
-      <!-- Persona pill tabs -->
-      <div id="tab-bar" role="tablist">
-        <button class="pill-tab" id="tab-vc" role="tab" aria-selected="true" data-persona="vc_analyst" data-color="#6366f1">VC</button>
-        <button class="pill-tab" id="tab-dev" role="tab" aria-selected="false" data-persona="developer_analyst" data-color="#10b981">Developer</button>
-        <button class="pill-tab" id="tab-journalist" role="tab" aria-selected="false" data-persona="journalist" data-color="#f59e0b">Journalist</button>
+      <div class="result-query-banner">
+        <div>
+          <div class="rqb-label">Scout report for</div>
+          <div class="rqb-query" id="result-query-text"></div>
+        </div>
       </div>
 
-      <!-- Result card (one panel, content swaps on tab click) -->
+      <p class="section-heading">Analyst perspectives</p>
+      <div id="tab-bar" role="tablist">
+        <button class="pill-tab" id="tab-vc" role="tab" aria-selected="true"
+          data-persona="vc_analyst" style="--tcolor:#6366f1">
+          <span class="tab-icon">💼</span> VC Analyst
+        </button>
+        <button class="pill-tab" id="tab-dev" role="tab" aria-selected="false"
+          data-persona="developer_analyst" style="--tcolor:#10b981">
+          <span class="tab-icon">💻</span> Developer
+        </button>
+        <button class="pill-tab" id="tab-journalist" role="tab" aria-selected="false"
+          data-persona="journalist" style="--tcolor:#f59e0b">
+          <span class="tab-icon">📰</span> Journalist
+        </button>
+      </div>
+
       <div id="result-card" role="tabpanel">
-        <div id="hypothesis-text"></div>
-        <div id="confidence-rating" aria-label=""></div>
-        <div id="evidence-section">
-          <button id="evidence-toggle" aria-expanded="false" aria-controls="evidence-list">Show evidence &#9660;</button>
-          <div id="evidence-list">
-            <ol id="evidence-items"></ol>
-            <h3>Counter-evidence</h3>
-            <ol id="counter-items"></ol>
+        <div class="result-card-header">
+          <div class="persona-label-tag">
+            <div class="tag-dot" id="persona-dot"></div>
+            <span id="persona-name-tag"></span>
+          </div>
+          <div class="confidence-pill">
+            <div class="conf-bar-wrap">
+              <div class="conf-bar-fill" id="conf-bar-fill" style="width:0%"></div>
+            </div>
+            <span id="conf-pct"></span>
+          </div>
+        </div>
+        <div class="result-card-body">
+          <div id="hypothesis-text"></div>
+          <div id="confidence-rating"></div>
+          <div id="evidence-section">
+            <button id="evidence-toggle" aria-expanded="false" aria-controls="evidence-list">
+              <span>📋</span> Show evidence & counter-evidence
+            </button>
+            <div id="evidence-list">
+              <h3>Supporting evidence</h3>
+              <ol id="evidence-items"></ol>
+              <h3>Counter-evidence</h3>
+              <ol id="counter-items"></ol>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 2f. Download bar (hidden until pipeline complete, sits ABOVE charts) -->
-    <section id="download-bar">
-      <button class="dl-btn" id="dl-report">Download Report</button>
-      <button class="dl-btn" id="dl-csv">Download CSV</button>
-      <button class="dl-btn" id="dl-chart1">Chart 1: Star Velocity</button>
-      <button class="dl-btn" id="dl-chart2">Chart 2: Category Heatmap</button>
-      <button class="dl-btn" id="dl-chart3">Chart 3: HN Buzz vs Stars</button>
-      <button class="dl-btn" id="dl-chart4">Chart 4: Persona Scores</button>
+    <!-- Top Repos Cards -->
+    <section id="top-repos-panel">
+      <p class="section-heading" style="margin-top:8px">Top repositories</p>
+      <div id="repos-grid"></div>
     </section>
 
-    <!-- 2g. Charts panel (hidden until pipeline complete) -->
+    <!-- Charts -->
     <section id="charts-panel">
+      <p class="section-heading" style="margin-top:8px">Data insights</p>
       <div id="charts-grid">
-        <img id="chart1" src="" alt="Star Velocity Chart" loading="lazy" />
-        <img id="chart2" src="" alt="Category Heatmap" loading="lazy" />
-        <img id="chart3" src="" alt="HN Buzz vs Stars" loading="lazy" />
-        <img id="chart4" src="" alt="Persona Scores" loading="lazy" />
+        <div class="chart-wrap">
+          <canvas id="chart1"></canvas>
+          <p class="chart-desc">30-day star growth rate for the top repos. Higher % means faster community adoption.</p>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart2"></canvas>
+          <p class="chart-desc">Number of top repos tagged with each topic. Shows which technology categories dominate the results.</p>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart3"></canvas>
+          <p class="chart-desc">Each dot is a repo — stars on X, Hacker News buzz score on Y. Dot size reflects growth rate.</p>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart4"></canvas>
+          <p class="chart-desc">How confident each analyst is in their hypothesis. Above 50% = bullish signal.</p>
+        </div>
       </div>
     </section>
 
-    <!-- 2h. Empty state (shown on initial load before any run) -->
-    <section id="empty-state">
-      <h2>No results yet</h2>
-      <p>Enter a topic above and click Run Scout to generate a multi-perspective tech hypothesis.</p>
+    <!-- Heatmap (client-rendered via Chart.js matrix) -->
+    <section id="heatmap-panel">
+      <p class="section-heading" style="margin-top:8px">Category velocity heatmap</p>
+      <div class="chart-wrap"><canvas id="chart-heatmap"></canvas></div>
+      <p class="chart-desc">Each cell shows a repo's star growth rate for a given topic tag. Green = growing fast, red = declining. Empty cells mean that repo isn't tagged with that topic.</p>
     </section>
-  </main>
+
+    <!-- Full Report -->
+    <section id="full-report-panel">
+      <div class="report-panel-header">
+        <p class="section-heading" style="margin:0">Full scout report</p>
+        <button id="report-toggle-btn">Collapse ▲</button>
+      </div>
+      <div id="full-report-body"></div>
+    </section>
+
+    <!-- Downloads -->
+    <section id="download-bar">
+      <p class="section-heading" style="margin-top:8px">Export results</p>
+      <div class="dl-grid">
+        <button class="dl-btn" id="dl-report"><span class="dl-icon">📄</span> Scout Report</button>
+        <button class="dl-btn" id="dl-csv"><span class="dl-icon">📊</span> Repos CSV</button>
+        <button class="dl-btn" id="dl-chart1"><span class="dl-icon">📈</span> Star Velocity</button>
+        <button class="dl-btn" id="dl-chart2"><span class="dl-icon">🔥</span> Topic Heatmap</button>
+        <button class="dl-btn" id="dl-chart3"><span class="dl-icon">⭐</span> Buzz vs Stars</button>
+        <button class="dl-btn" id="dl-chart4"><span class="dl-icon">🎯</span> Confidence Scores</button>
+      </div>
+    </section>
+
+    <!-- Empty state -->
+    <section id="empty-state">
+      <div class="empty-icon">🔭</div>
+      <h2>Ready to scout</h2>
+      <p>Type a technology topic above — like "edge ML" or "WebAssembly runtimes" — and click Scout. Results take 2–3 minutes.</p>
+    </section>
+
+  </div>
 
   <script>
     // ---- State ----
@@ -487,53 +998,74 @@
     let currentSessionId = null;
     let currentPersona = 'vc_analyst';
     let lastQuery = '';
+    let chartInstances = {};
 
-    // Persona metadata: maps persona key → tab id, checkbox id, accent color
     const PERSONA_META = {
-      vc_analyst:         { tabId: 'tab-vc',         cbId: 'cb-vc',         color: '#6366f1' },
-      developer_analyst:  { tabId: 'tab-dev',        cbId: 'cb-dev',        color: '#10b981' },
-      journalist:         { tabId: 'tab-journalist',  cbId: 'cb-journalist', color: '#f59e0b' },
+      vc_analyst:        { tabId: 'tab-vc',         cbId: 'cb-vc',         color: '#6366f1', name: 'VC Analyst' },
+      developer_analyst: { tabId: 'tab-dev',        cbId: 'cb-dev',        color: '#10b981', name: 'Developer' },
+      journalist:        { tabId: 'tab-journalist', cbId: 'cb-journalist', color: '#f59e0b', name: 'Journalist' },
     };
 
-    // ---- Helpers ----
+    // ---- Example pills ----
+    function setExample(text) {
+      document.getElementById('query-input').value = text;
+      document.getElementById('query-input').focus();
+    }
 
+    // ---- Persona card toggles ----
+    const pcardMap = { vc: 'cb-vc', dev: 'cb-dev', journalist: 'cb-journalist' };
+    function togglePersona(key) {
+      const cb = document.getElementById(pcardMap[key]);
+      const card = document.getElementById('pcard-' + key);
+      cb.checked = !cb.checked;
+      card.classList.toggle('selected', cb.checked);
+      // fire change event for tab visibility logic
+      cb.dispatchEvent(new Event('change'));
+    }
+
+    // ---- Char counter ----
+    const queryInput = document.getElementById('query-input');
+    const charCounter = document.getElementById('char-counter');
+    queryInput.addEventListener('input', () => {
+      const len = queryInput.value.length;
+      charCounter.textContent = `${len} / 500`;
+      charCounter.className = len >= 500 ? 'over' : len >= 400 ? 'warn' : '';
+    });
+
+    // ---- Elapsed timer ----
+    let _timerInterval = null;
+    function startTimer() {
+      const start = Date.now();
+      const el = document.getElementById('elapsed-timer');
+      clearInterval(_timerInterval);
+      _timerInterval = setInterval(() => {
+        const s = Math.floor((Date.now() - start) / 1000);
+        el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      }, 1000);
+    }
+    function stopTimer() { clearInterval(_timerInterval); }
+
+    // ---- Stage helpers (stepper version) ----
     function setStage(stageId, state) {
-      // state: 'inactive' | 'active' | 'complete'
       const el = document.getElementById(stageId);
       if (!el) return;
-      el.className = 'stage ' + state;
-      const baseName = el.textContent.replace(/^✓\s*/, '');
-      if (state === 'complete') {
-        el.textContent = '✓ ' + baseName;
-      } else {
-        el.textContent = baseName;
-      }
+      el.className = 'step ' + (state === 'complete' ? 'done' : state === 'active' ? 'active' : '');
     }
 
     function resetStages() {
-      ['stage-collection', 'stage-critic', 'stage-analysis', 'stage-synthesis'].forEach(id => {
-        setStage(id, 'inactive');
-      });
+      ['stage-collection', 'stage-critic', 'stage-analysis', 'stage-synthesis'].forEach(id => setStage(id, ''));
     }
 
     function setRunButtonState(running) {
       const btn = document.getElementById('run-btn');
-      if (running) {
-        btn.textContent = 'Running\u2026';
-        btn.disabled = true;
-        btn.classList.add('disabled');
-      } else {
-        btn.textContent = 'Run Scout';
-        btn.disabled = false;
-        btn.classList.remove('disabled');
-      }
+      btn.textContent = running ? 'Running…' : 'Scout →';
+      btn.disabled = running;
     }
 
     function show(id, displayType) {
       const el = document.getElementById(id);
       if (el) el.style.display = displayType || 'block';
     }
-
     function hide(id) {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
@@ -545,174 +1077,346 @@
       hide('progress-strip');
       hide('skeleton');
       document.getElementById('error-body').textContent = message;
-      const errorEl = document.getElementById('error-state');
-      errorEl.style.display = 'flex';
+      show('error-state', 'flex');
     }
 
     // ---- wireDownloadButtons ----
     function wireDownloadButtons(sessionId) {
       const downloads = [
-        ['dl-report',   'scout_report.md'],
-        ['dl-csv',      'top_repos.csv'],
-        ['dl-chart1',   'chart_1.png'],
-        ['dl-chart2',   'chart_2.png'],
-        ['dl-chart3',   'chart_3.png'],
-        ['dl-chart4',   'chart_4.png'],
+        ['dl-report', 'scout_report.md'],
+        ['dl-csv',    'top_repos.csv'],
+        ['dl-chart1', 'chart_1.png'],
+        ['dl-chart2', 'chart_2.png'],
+        ['dl-chart3', 'chart_3.png'],
+        ['dl-chart4', 'chart_4.png'],
       ];
       downloads.forEach(([btnId, artifact]) => {
         const btn = document.getElementById(btnId);
-        if (btn) {
-          btn.onclick = () => {
-            window.open('/download/' + artifact + '?session_id=' + encodeURIComponent(sessionId), '_blank');
-          };
-        }
+        if (btn) btn.onclick = () => window.open('/download/' + artifact + '?session_id=' + encodeURIComponent(sessionId), '_blank');
       });
     }
 
     // ---- switchTab ----
     function switchTab(persona) {
       currentPersona = persona;
+      const meta = PERSONA_META[persona];
 
-      // Update pill tab active styles
-      Object.entries(PERSONA_META).forEach(([key, meta]) => {
-        const tab = document.getElementById(meta.tabId);
-        if (!tab) return;
-        if (key === persona) {
-          tab.setAttribute('aria-selected', 'true');
-          const color = meta.color;
-          // 15% opacity: append '26' to hex color
-          tab.style.background = color + '26';
-          tab.style.color = color;
-          tab.style.borderColor = color;
-          tab.style.borderWidth = '1.5px';
-        } else {
-          tab.setAttribute('aria-selected', 'false');
-          tab.style.background = '';
-          tab.style.color = '';
-          tab.style.borderColor = '';
-          tab.style.borderWidth = '';
-        }
+      Object.entries(PERSONA_META).forEach(([key, m]) => {
+        const tab = document.getElementById(m.tabId);
+        if (tab) tab.setAttribute('aria-selected', key === persona ? 'true' : 'false');
       });
 
-      if (!currentReport) return;
+      // Update card header
+      const dot = document.getElementById('persona-dot');
+      const nameTag = document.getElementById('persona-name-tag');
+      if (dot) dot.style.setProperty('--pcolor', meta.color);
+      if (nameTag) nameTag.textContent = meta.name;
 
+      // Update confidence bar color
+      const fill = document.getElementById('conf-bar-fill');
+      if (fill) fill.style.setProperty('--pcolor', meta.color);
+
+      if (!currentReport) return;
       const hypothesis = currentReport.hypotheses.find(h => h.persona === persona);
 
       if (!hypothesis) {
-        document.getElementById('hypothesis-text').textContent =
-          'No hypothesis available for this persona. The analyst returned no output \u2014 try running again.';
-        document.getElementById('confidence-rating').textContent = '';
-        document.getElementById('confidence-rating').setAttribute('aria-label', '');
+        document.getElementById('hypothesis-text').textContent = 'No hypothesis available for this persona.';
+        document.getElementById('conf-pct').textContent = '';
+        if (fill) fill.style.width = '0%';
         document.getElementById('evidence-items').innerHTML = '';
         document.getElementById('counter-items').innerHTML = '';
         return;
       }
 
-      // Hypothesis text
       document.getElementById('hypothesis-text').textContent = hypothesis.hypothesis_text;
 
-      // Confidence dot-rating: confidence_score in [0.0, 1.0]
-      const filled = Math.floor((hypothesis.confidence_score * 100) / 20);
-      const pct = Math.round(hypothesis.confidence_score * 100);
-      const dots = '\u25cf'.repeat(filled) + '\u25cb'.repeat(5 - filled);
-      document.getElementById('confidence-rating').textContent = dots + ' ' + pct + '%';
-      document.getElementById('confidence-rating').setAttribute(
-        'aria-label',
-        filled + ' out of 5 confidence'
-      );
+      const pct = Math.round((hypothesis.confidence_score || 0) * 100);
+      document.getElementById('conf-pct').textContent = pct + '%';
+      if (fill) fill.style.width = pct + '%';
 
-      // Reset evidence toggle to collapsed
+      // Collapse evidence
       const toggle = document.getElementById('evidence-toggle');
       const evidenceList = document.getElementById('evidence-list');
       toggle.setAttribute('aria-expanded', 'false');
-      toggle.textContent = 'Show evidence \u25bc';
+      toggle.innerHTML = '<span>📋</span> Show evidence & counter-evidence';
       evidenceList.style.display = 'none';
 
-      // Populate evidence items
       const evItems = document.getElementById('evidence-items');
       evItems.innerHTML = '';
       (hypothesis.evidence || []).forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = item;
-        evItems.appendChild(li);
+        const li = document.createElement('li'); li.textContent = item; evItems.appendChild(li);
       });
 
-      // Populate counter-evidence items
       const counterItems = document.getElementById('counter-items');
       counterItems.innerHTML = '';
       (hypothesis.counter_evidence || []).forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = item;
-        counterItems.appendChild(li);
+        const li = document.createElement('li'); li.textContent = item; counterItems.appendChild(li);
       });
+    }
+
+    // ---- renderCharts ----
+    const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#14b8a6','#f97316','#06b6d4','#ec4899'];
+
+    function renderCharts(report) {
+      Object.values(chartInstances).forEach(c => c.destroy());
+      chartInstances = {};
+      const repos = (report.top_repos || []).slice(0, 10);
+
+      // Chart 1: Star Velocity (as % of total stars)
+      {
+        const sorted = [...repos].sort((a, b) => (b.star_velocity || 0) - (a.star_velocity || 0));
+        const labels = sorted.map(r => (r.name || '').split('/').pop() || r.name);
+        const data = sorted.map(r => +((r.star_velocity || 0) * 100).toFixed(2));
+        const colors = data.map(v => v >= 0 ? '#6366f1' : '#ef4444');
+        chartInstances.c1 = new Chart(document.getElementById('chart1'), {
+          type: 'bar',
+          data: { labels, datasets: [{ label: '30-day growth %', data, backgroundColor: colors }] },
+          options: {
+            indexAxis: 'y', responsive: true,
+            plugins: {
+              legend: { display: false },
+              title: { display: true, text: 'Star Growth Rate — Top Repos', font: { size: 13 } },
+              tooltip: { callbacks: { label: ctx => ` ${ctx.raw > 0 ? '+' : ''}${ctx.raw}% 30-day growth` } },
+            },
+            scales: { x: { title: { display: true, text: 'Growth Rate (%)' }, ticks: { callback: v => v + '%' } } },
+          },
+        });
+      }
+
+      // Chart 2: Repos per Topic
+      {
+        const topicCount = {};
+        repos.forEach(r => (r.topics || []).forEach(t => { topicCount[t] = (topicCount[t] || 0) + 1; }));
+        const sorted = Object.entries(topicCount).sort((a,b) => b[1]-a[1]).slice(0, 12);
+        chartInstances.c2 = new Chart(document.getElementById('chart2'), {
+          type: 'bar',
+          data: { labels: sorted.map(([t]) => t), datasets: [{ label: 'Repos', data: sorted.map(([,c]) => c), backgroundColor: '#6366f1' }] },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false }, title: { display: true, text: 'Repos per Topic', font: { size: 13 } } },
+            scales: { x: { ticks: { maxRotation: 40, font: { size: 10 } } }, y: { title: { display: true, text: 'Count' } } },
+          },
+        });
+      }
+
+      // Chart 3: Buzz vs Stars
+      {
+        const pts = repos.map(r => ({
+          x: r.stars || 0,
+          y: +Math.min(1, Math.max(0, ((r.star_velocity || 0) + 1) / 2)).toFixed(3),
+          label: (r.name || '').split('/').pop() || r.name,
+        }));
+        chartInstances.c3 = new Chart(document.getElementById('chart3'), {
+          type: 'scatter',
+          data: { datasets: [{ data: pts.map(p => ({x:p.x,y:p.y})), backgroundColor: CHART_COLORS.slice(0, pts.length), pointRadius: 8 }] },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              title: { display: true, text: 'Buzz Score vs Stars', font: { size: 13 } },
+              tooltip: { callbacks: { label: ctx => { const p = pts[ctx.dataIndex]; return `${p.label}: ${p.x} stars, buzz ${p.y}`; } } },
+            },
+            scales: {
+              x: { title: { display: true, text: 'GitHub Stars' } },
+              y: { min: 0, max: 1.1, title: { display: true, text: 'Buzz' } },
+            },
+          },
+        });
+      }
+
+      // Chart 4: Confidence Scores
+      {
+        const hyps = report.hypotheses || [];
+        const labels = hyps.map(h => (h.persona||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()));
+        const data = hyps.map(h => +((h.confidence_score||0)).toFixed(2));
+        chartInstances.c4 = new Chart(document.getElementById('chart4'), {
+          type: 'bar',
+          data: { labels, datasets: [{ data, backgroundColor: ['#6366f1','#10b981','#f59e0b'] }] },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false }, title: { display: true, text: 'Analyst Confidence', font: { size: 13 } } },
+            scales: { y: { min: 0, max: 1, ticks: { callback: v => (v*100).toFixed(0)+'%' } } },
+          },
+        });
+      }
+
+      // Heatmap: topics × repos matrix, colored by star_velocity
+      {
+        const allTopics = {};
+        repos.forEach(r => (r.topics || []).forEach(t => { allTopics[t] = (allTopics[t] || 0) + 1; }));
+        const topics = Object.entries(allTopics).sort((a,b) => b[1]-a[1]).slice(0,12).map(([t]) => t);
+        const repoLabels = repos.slice(0,10).map(r => (r.name||'').split('/').pop() || r.name);
+
+        function velColor(v) {
+          if (v === null) return 'rgba(226,232,240,0.4)';
+          if (v >= 0) return `rgba(16,185,129,${(0.15 + v * 0.85).toFixed(2)})`;
+          return `rgba(239,68,68,${(0.15 + (-v) * 0.85).toFixed(2)})`;
+        }
+
+        const matrixData = [];
+        topics.forEach(topic => {
+          repos.slice(0,10).forEach((r, ri) => {
+            const hasTopic = (r.topics || []).includes(topic);
+            matrixData.push({ x: repoLabels[ri], y: topic, v: hasTopic ? (r.star_velocity || 0) : null });
+          });
+        });
+
+        if (topics.length && repoLabels.length) {
+          if (chartInstances.heatmap) chartInstances.heatmap.destroy();
+          chartInstances.heatmap = new Chart(document.getElementById('chart-heatmap'), {
+            type: 'matrix',
+            data: {
+              datasets: [{
+                label: 'Star velocity',
+                data: matrixData,
+                backgroundColor: ctx => velColor(ctx.dataset.data[ctx.dataIndex].v),
+                borderColor: 'rgba(255,255,255,0.6)',
+                borderWidth: 2,
+                width: ({ chart }) => (chart.chartArea ? chart.chartArea.width / repoLabels.length - 2 : 30),
+                height: ({ chart }) => (chart.chartArea ? chart.chartArea.height / topics.length - 2 : 24),
+              }],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { display: false },
+                title: { display: true, text: 'Star Velocity: Topics × Repos', font: { size: 13 } },
+                tooltip: {
+                  callbacks: {
+                    title: ctx => `${ctx[0].raw.y} × ${ctx[0].raw.x}`,
+                    label: ctx => {
+                      const v = ctx.raw.v;
+                      return v === null ? 'Not tagged' : `Growth: ${v >= 0 ? '+' : ''}${(v*100).toFixed(1)}%`;
+                    },
+                  },
+                },
+              },
+              scales: {
+                x: { type: 'category', labels: repoLabels, ticks: { maxRotation: 40, font: { size: 10 } }, grid: { display: false } },
+                y: { type: 'category', labels: [...topics].reverse(), ticks: { font: { size: 10 } }, grid: { display: false } },
+              },
+            },
+          });
+          show('heatmap-panel', 'block');
+        }
+      }
+    }
+
+    // ---- renderFullReport ----
+    function renderFullReport(report) {
+      const lines = [
+        `# Scout Report`,
+        ``,
+        `**Query:** ${report.query}`,
+        `**Generated:** ${new Date(report.generated_at).toUTCString()}`,
+        ``,
+        `---`,
+        ``,
+        `## Analyst Perspectives`,
+        ``,
+      ];
+      for (const h of (report.hypotheses || [])) {
+        const name = (h.persona || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        lines.push(`### ${name}`, ``);
+        lines.push(`**Confidence:** ${Math.round((h.confidence_score || 0) * 100)}%`, ``);
+        lines.push(`**Hypothesis:** ${h.hypothesis_text}`, ``);
+        lines.push(`**Reasoning:** ${h.reasoning}`, ``);
+        lines.push(`**Supporting Evidence:**`);
+        for (const e of (h.evidence || [])) lines.push(`- ${e}`);
+        lines.push(``, `**Counter-Evidence:**`);
+        for (const e of (h.counter_evidence || [])) lines.push(`- ${e}`);
+        lines.push(``);
+      }
+      if (report.hypotheses && report.hypotheses.length) {
+        const overall = report.hypotheses.reduce((s, h) => s + (h.confidence_score || 0), 0) / report.hypotheses.length;
+        lines.push(`---`, ``, `## Overall Confidence Score`, ``, `**${Math.round(overall * 100)}%** (equal-weighted average across ${report.hypotheses.length} analysts)`, ``);
+      }
+      lines.push(`---`, ``, `## Top Repositories`, ``, `| Repo | Stars | Growth Rate | Language |`, `| ---- | ----- | ----------- | -------- |`);
+      for (const r of (report.top_repos || [])) {
+        const vel = ((r.star_velocity || 0) * 100).toFixed(2);
+        const sign = r.star_velocity >= 0 ? '+' : '';
+        lines.push(`| [${r.name}](${r.url}) | ${(r.stars || 0).toLocaleString()} | ${sign}${vel}% | ${r.language || 'N/A'} |`);
+      }
+      const md = lines.join('\n');
+      document.getElementById('full-report-body').innerHTML = marked.parse(md);
+    }
+
+    // ---- renderTopRepos ----
+    function renderTopRepos(report) {
+      const grid = document.getElementById('repos-grid');
+      grid.innerHTML = '';
+      (report.top_repos || []).forEach(r => {
+        const vel = (r.star_velocity || 0) * 100;
+        const sign = vel >= 0 ? '+' : '';
+        const growthClass = vel >= 0 ? 'pos' : 'neg';
+        const shortName = (r.name || '').split('/').pop() || r.name;
+        const card = document.createElement('div');
+        card.className = 'repo-card';
+        card.innerHTML = `
+          <a class="repo-card-name" href="${r.url}" target="_blank" rel="noopener" title="${r.name}">${r.name}</a>
+          <div class="repo-card-meta">
+            <span>⭐ ${(r.stars || 0).toLocaleString()}</span>
+            <span class="repo-growth ${growthClass}">${sign}${vel.toFixed(1)}%</span>
+            ${r.language ? `<span class="lang-badge">${r.language}</span>` : ''}
+          </div>`;
+        grid.appendChild(card);
+      });
+      show('top-repos-panel', 'block');
     }
 
     // ---- renderResults ----
     function renderResults(report) {
       currentReport = report;
-
-      // Show results, download bar, charts panel
+      stopTimer();
       show('results', 'block');
-      show('download-bar', 'flex');
+      show('download-bar', 'block');
       show('charts-panel', 'block');
+      show('full-report-panel', 'block');
       hide('empty-state');
+      setTimeout(() => hide('progress-strip'), 1800);
+      renderFullReport(report);
+      renderTopRepos(report);
 
-      // Hide progress strip after 2s delay
-      setTimeout(() => hide('progress-strip'), 2000);
+      // Show query in banner
+      const qBanner = document.getElementById('result-query-text');
+      if (qBanner) qBanner.textContent = lastQuery;
 
-      // Wire chart image sources
-      if (currentSessionId) {
-        document.getElementById('chart1').src = '/download/chart_1.png?session_id=' + encodeURIComponent(currentSessionId);
-        document.getElementById('chart2').src = '/download/chart_2.png?session_id=' + encodeURIComponent(currentSessionId);
-        document.getElementById('chart3').src = '/download/chart_3.png?session_id=' + encodeURIComponent(currentSessionId);
-        document.getElementById('chart4').src = '/download/chart_4.png?session_id=' + encodeURIComponent(currentSessionId);
-      }
+      renderCharts(report);
 
-      // Filter visible tabs based on checkbox state
       Object.entries(PERSONA_META).forEach(([key, meta]) => {
         const cb = document.getElementById(meta.cbId);
         const tab = document.getElementById(meta.tabId);
         if (tab) tab.style.display = (cb && cb.checked) ? '' : 'none';
       });
 
-      // Switch to vc_analyst by default (or first checked tab)
       const firstChecked = Object.entries(PERSONA_META).find(([key, meta]) => {
         const cb = document.getElementById(meta.cbId);
         return cb && cb.checked;
       });
-      if (firstChecked) {
-        switchTab(firstChecked[0]);
-      }
+      if (firstChecked) switchTab(firstChecked[0]);
     }
 
     // ---- runScout ----
     function runScout() {
       const query = document.getElementById('query-input').value.trim();
       if (!query) {
-        showError('Please enter a technology topic before running.');
+        showError('Please enter a technology topic first.');
         return;
       }
-
       lastQuery = query;
       setRunButtonState(true);
-
-      // Hide old states
       hide('error-state');
       hide('empty-state');
       hide('results');
       hide('download-bar');
       hide('charts-panel');
-
-      // Show progress strip and skeleton
       show('progress-strip', 'flex');
       show('skeleton', 'block');
-
-      // Reset all stages to inactive
       resetStages();
+      startTimer();
+      document.getElementById('progress-strip').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      // Open EventSource: GET /stream?query=<encoded>
-      const url = '/stream?query=' + encodeURIComponent(query);
-      const es = new EventSource(url);
+      const es = new EventSource('/stream?query=' + encodeURIComponent(query));
 
       es.addEventListener('collection_started', () => setStage('stage-collection', 'active'));
       es.addEventListener('collection_complete', () => setStage('stage-collection', 'complete'));
@@ -721,98 +1425,64 @@
       es.addEventListener('analysis_started', () => setStage('stage-analysis', 'active'));
       es.addEventListener('analysis_complete', () => setStage('stage-analysis', 'complete'));
       es.addEventListener('synthesis_started', () => setStage('stage-synthesis', 'active'));
+      es.addEventListener('synthesis_complete', () => setStage('stage-synthesis', 'complete'));
 
       es.addEventListener('complete', function(e) {
-        // synthesis_complete maps to 'complete' event from server
         setStage('stage-synthesis', 'complete');
-        es.close();
         hide('skeleton');
         setRunButtonState(false);
-        try {
-          const report = JSON.parse(e.data);
-          renderResults(report);
-        } catch (err) {
-          showError('Failed to parse pipeline response: ' + err.message);
-        }
-      });
-
-      // synthesis_complete is a progress notification only (data = plain text "Synthesis complete")
-      // The actual report JSON arrives via the 'complete' event below — do not parse or close here.
-      es.addEventListener('synthesis_complete', function() {
-        setStage('stage-synthesis', 'complete');
+        try { renderResults(JSON.parse(e.data)); }
+        catch(err) { showError('Failed to parse response: ' + err.message); }
       });
 
       es.addEventListener('session_id', function(e) {
         currentSessionId = e.data;
         wireDownloadButtons(currentSessionId);
-        // Also update chart src if results are already displayed
-        if (currentReport) {
-          document.getElementById('chart1').src = '/download/chart_1.png?session_id=' + encodeURIComponent(currentSessionId);
-          document.getElementById('chart2').src = '/download/chart_2.png?session_id=' + encodeURIComponent(currentSessionId);
-          document.getElementById('chart3').src = '/download/chart_3.png?session_id=' + encodeURIComponent(currentSessionId);
-          document.getElementById('chart4').src = '/download/chart_4.png?session_id=' + encodeURIComponent(currentSessionId);
-        }
+        es.close();
       });
 
       es.addEventListener('error_event', function(e) {
         es.close();
         setRunButtonState(false);
-        showError(e.data || 'An unexpected error occurred. Please try again.');
+        showError(e.data || 'An unexpected error occurred.');
       });
 
       es.onerror = function() {
-        // Only trigger if not already closed
         if (es.readyState !== EventSource.CLOSED) {
           es.close();
           setRunButtonState(false);
-          showError('Connection to server lost. Please try again.');
+          showError('Connection lost. Please try again.');
         }
       };
     }
 
     // ---- DOMContentLoaded ----
     document.addEventListener('DOMContentLoaded', function() {
-      // Run button
       document.getElementById('run-btn').addEventListener('click', runScout);
 
-      // Retry button
       document.getElementById('retry-btn').addEventListener('click', function() {
         hide('error-state');
-        // Restore the query input to lastQuery
         if (lastQuery) document.getElementById('query-input').value = lastQuery;
         runScout();
       });
 
-      // Evidence toggle
       document.getElementById('evidence-toggle').addEventListener('click', function() {
         const list = document.getElementById('evidence-list');
         const expanded = this.getAttribute('aria-expanded') === 'true';
-        if (expanded) {
-          list.style.display = 'none';
-          this.setAttribute('aria-expanded', 'false');
-          this.textContent = 'Show evidence \u25bc';
-        } else {
-          list.style.display = 'block';
-          this.setAttribute('aria-expanded', 'true');
-          this.textContent = 'Hide evidence \u25b2';
-        }
+        list.style.display = expanded ? 'none' : 'block';
+        this.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        this.innerHTML = expanded
+          ? '<span>📋</span> Show evidence & counter-evidence'
+          : '<span>📋</span> Hide evidence & counter-evidence';
       });
 
-      // Tab bar click listeners
-      document.querySelectorAll('.pill-tab').forEach(function(tab) {
+      document.querySelectorAll('.pill-tab').forEach(tab => {
         tab.addEventListener('click', function() {
-          document.querySelectorAll('.pill-tab').forEach(t => t.setAttribute('aria-selected', 'false'));
-          this.setAttribute('aria-selected', 'true');
           switchTab(this.dataset.persona);
         });
       });
 
-      // Persona checkbox change listeners
-      const cbPersonaMap = {
-        'cb-vc':         'vc_analyst',
-        'cb-dev':        'developer_analyst',
-        'cb-journalist': 'journalist',
-      };
+      const cbPersonaMap = { 'cb-vc': 'vc_analyst', 'cb-dev': 'developer_analyst', 'cb-journalist': 'journalist' };
       Object.entries(cbPersonaMap).forEach(([cbId, persona]) => {
         const cb = document.getElementById(cbId);
         if (!cb) return;
@@ -820,10 +1490,8 @@
           const meta = PERSONA_META[persona];
           const tab = document.getElementById(meta.tabId);
           if (tab) tab.style.display = this.checked ? '' : 'none';
-
-          // If the currently active tab was just unchecked, switch to first checked tab
           if (!this.checked && currentPersona === persona) {
-            const firstChecked = Object.entries(PERSONA_META).find(([key, m]) => {
+            const firstChecked = Object.entries(PERSONA_META).find(([k, m]) => {
               const c = document.getElementById(m.cbId);
               return c && c.checked;
             });
@@ -832,9 +1500,15 @@
         });
       });
 
-      // Allow pressing Enter in query input to run
-      document.getElementById('query-input').addEventListener('keydown', function(e) {
+      document.getElementById('query-input').addEventListener('keydown', e => {
         if (e.key === 'Enter') runScout();
+      });
+
+      document.getElementById('report-toggle-btn').addEventListener('click', function() {
+        const body = document.getElementById('full-report-body');
+        const collapsed = body.style.display === 'none';
+        body.style.display = collapsed ? 'block' : 'none';
+        this.textContent = collapsed ? 'Collapse ▲' : 'Expand ▼';
       });
     });
   </script>

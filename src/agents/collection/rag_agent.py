@@ -3,10 +3,14 @@
 Queries ChromaDB corpus (pre-embedded HN stories, RSS feeds, domain context).
 Provides retrieval tool for analyst agents.
 """
+import logging
+
 from google.adk.agents.llm_agent import LlmAgent
 
 from src.rag.retrieval import async_query_corpus
 from src.models.schemas import RAGContextChunk  # noqa: F401 — type reference only
+
+logger = logging.getLogger(__name__)
 
 
 async def query_rag_corpus(query: str, n_results: int = 10) -> dict:
@@ -23,7 +27,9 @@ async def query_rag_corpus(query: str, n_results: int = 10) -> dict:
         Dictionary with 'chunks' key containing a list of context chunk dicts.
         Each chunk has keys: text (str), source (str), metadata (dict).
     """
+    logger.info("RAG query: %r n_results=%d", query, n_results)
     chunks = await async_query_corpus(query, n_results)
+    logger.info("RAG returned %d chunks for query=%r", len(chunks), query)
     return {"chunks": chunks}
 
 
