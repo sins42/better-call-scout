@@ -30,8 +30,13 @@ You have access to the following data:
 Repository signals:
 {repo_data_json}
 
-News and funding signals:
+News and web intelligence signals:
 {news_items_json}
+
+News items are tagged with an [angle] prefix in their content field. Prioritize items tagged:
+- [vc_funding] — funding rounds, investor signals
+- [vc_market] — TAM, market size, competitor landscape
+- [vc_deals] — acquisitions, partnerships, enterprise adoption
 
 Historical RAG context:
 {rag_chunks_json}
@@ -57,6 +62,7 @@ Return a JSON object conforming exactly to AnalystHypothesis. Fields:
 - counter_evidence (list of strings) — signals that CONTRADICT your hypothesis_text and could prove you wrong
 - reasoning (string)
 - hypothesis_text (string)
+- sources (list of strings) — URLs from news_items_json that you actually cited as evidence. Include up to 5 most relevant URLs.
 No extra keys."""
 
 VC_CRITIC_PROMPT: str = """You are an adversarial devil's advocate challenging a VC analyst's hypothesis.
@@ -83,8 +89,13 @@ You have access to the following data:
 Repository signals:
 {repo_data_json}
 
-News and job market signals:
+News and web intelligence signals:
 {news_items_json}
+
+News items are tagged with an [angle] prefix in their content field. Prioritize items tagged:
+- [dev_adoption] — production case studies, real-world deployments
+- [dev_hiring] — job postings, engineering hiring signals
+- [dev_benchmark] — performance comparisons, benchmarks, alternatives
 
 Historical RAG context:
 {rag_chunks_json}
@@ -111,6 +122,7 @@ Return a JSON object conforming exactly to AnalystHypothesis. Fields:
 - counter_evidence (list of strings) — signals that CONTRADICT your hypothesis_text and could prove you wrong
 - reasoning (string)
 - hypothesis_text (string)
+- sources (list of strings) — URLs from news_items_json that you actually cited as evidence. Include up to 5 most relevant URLs.
 No extra keys."""
 
 DEV_CRITIC_PROMPT: str = """You are an adversarial devil's advocate challenging a developer analyst's hypothesis.
@@ -137,8 +149,13 @@ You have access to the following data:
 Repository signals:
 {repo_data_json}
 
-News and media signals:
+News and web intelligence signals:
 {news_items_json}
+
+News items are tagged with an [angle] prefix in their content field. Prioritize items tagged:
+- [press_coverage] — TechCrunch, Wired, VentureBeat and other mainstream tech media
+- [community_sentiment] — Reddit, forums, community criticism and problems
+- [hype_analysis] — honest reviews, hype vs reality takes, contrarian perspectives
 
 Historical RAG context:
 {rag_chunks_json}
@@ -165,6 +182,7 @@ Return a JSON object conforming exactly to AnalystHypothesis. Fields:
 - counter_evidence (list of strings) — signals that CONTRADICT your hypothesis_text and could prove you wrong
 - reasoning (string)
 - hypothesis_text (string)
+- sources (list of strings) — URLs from news_items_json that you actually cited as evidence. Include up to 5 most relevant URLs.
 No extra keys."""
 
 JOURNALIST_CRITIC_PROMPT: str = """You are an adversarial devil's advocate challenging a journalist's hypothesis about a tech story.

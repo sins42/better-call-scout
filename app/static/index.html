@@ -553,6 +553,18 @@
     }
     #evidence-items li::before { content: '↳ '; color: #10b981; font-weight: 700; }
     #counter-items li::before { content: '↳ '; color: #f59e0b; font-weight: 700; }
+    #sources-items { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    #sources-items li a {
+      font-size: 12px;
+      color: #6366f1;
+      text-decoration: none;
+      background: #eef2ff;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid #c7d2fe;
+      transition: background .15s;
+    }
+    #sources-items li a:hover { background: #c7d2fe; }
     #evidence-items li, #counter-items li {
       font-size: 14px;
       color: #334155;
@@ -919,6 +931,10 @@
               <ol id="evidence-items"></ol>
               <h3>Counter-evidence</h3>
               <ol id="counter-items"></ol>
+              <div id="sources-section" style="display:none">
+                <h3>Sources</h3>
+                <ul id="sources-items"></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -1152,6 +1168,27 @@
       (hypothesis.counter_evidence || []).forEach(item => {
         const li = document.createElement('li'); li.textContent = item; counterItems.appendChild(li);
       });
+
+      const sourcesSection = document.getElementById('sources-section');
+      const sourcesItems = document.getElementById('sources-items');
+      sourcesItems.innerHTML = '';
+      const sources = (hypothesis.sources || []).filter(s => s && s.startsWith('http'));
+      if (sources.length) {
+        sources.forEach(url => {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = url.replace(/^https?:\/\//, '').split('/')[0];
+          a.title = url;
+          li.appendChild(a);
+          sourcesItems.appendChild(li);
+        });
+        sourcesSection.style.display = 'block';
+      } else {
+        sourcesSection.style.display = 'none';
+      }
     }
 
     // ---- renderCharts ----

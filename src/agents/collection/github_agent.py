@@ -49,7 +49,7 @@ async def _github_get_with_retry(
 
     GitHub statistics endpoints return HTTP 202 when stats are being computed
     (cache miss). This helper retries until a 200 is received or retries are
-    exhausted.
+    exhausted. Network/SSL errors are also retried rather than propagated.
 
     Args:
         url: Full GitHub API URL for a stats endpoint.
@@ -57,7 +57,7 @@ async def _github_get_with_retry(
         max_retries: Maximum number of retry attempts after a 202 response.
 
     Returns:
-        Parsed JSON response, or None if all retries returned 202.
+        Parsed JSON response, or None if all retries returned 202 or failed.
     """
 
     def _do_request():
@@ -65,10 +65,23 @@ async def _github_get_with_retry(
         return resp
 
     for attempt in range(max_retries + 1):
-        resp = await asyncio.to_thread(_do_request)
+        try:
+            resp = await asyncio.to_thread(_do_request)
+        except (
+            requests.exceptions.SSLError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+        ) as exc:
+            if attempt < max_retries:
+                logger.warning("GitHub stats request failed (attempt %d/%d): %s", attempt + 1, max_retries, exc)
+                await asyncio.sleep(_RETRY_DELAY)
+                continue
+            logger.warning("GitHub stats request exhausted retries for %s: %s", url, exc)
+            return None
+
         if resp.status_code == 202:
             if attempt < max_retries:
-                await asyncio.sleep(_RETRY_DELAY)
+                await asyncio.sleep(_RETRY_DELAY * (attempt + 1))  # back off longer each attempt
                 continue
             return None
         resp.raise_for_status()
@@ -145,6 +158,15 @@ async def fetch_repo_details(owner: str, repo: str) -> dict:
             issues (int): Number of open issues.
     """
     logger.info("Fetching repo details for %s/%s", owner, repo)
+    try:
+        return await _fetch_repo_details_inner(owner, repo)
+    except Exception as exc:
+        logger.warning("fetch_repo_details failed for %s/%s — returning zeros: %s", owner, repo, exc)
+        return {"star_velocity": 0.0, "commits": 0, "contributors": 0, "issues": 0}
+
+
+async def _fetch_repo_details_inner(owner: str, repo: str) -> dict:
+    """Inner implementation of fetch_repo_details — see fetch_repo_details for docs."""
     auth_headers = {
         "Authorization": f"token {os.environ['GITHUB_TOKEN']}",
         "Accept": "application/vnd.github+json",

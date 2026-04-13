@@ -125,6 +125,8 @@ class AnalystHypothesis(BaseModel):
         counter_evidence: Counter-points or risks.
         reasoning: Step-by-step reasoning narrative.
         hypothesis_text: The final hypothesis statement.
+        sources: URLs of news items or web pages cited as evidence. Plain strings
+            to avoid validation failures on LLM-generated URLs.
     """
 
     persona: str
@@ -133,6 +135,7 @@ class AnalystHypothesis(BaseModel):
     counter_evidence: list[str] = Field(default_factory=list)
     reasoning: str
     hypothesis_text: str
+    sources: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -143,6 +146,7 @@ class AnalystHypothesis(BaseModel):
                 "counter_evidence": ["Crowded market", "No enterprise contracts disclosed"],
                 "reasoning": "Star velocity is top 1% of tracked repos...",
                 "hypothesis_text": "LangChain is poised for enterprise breakout in H2 2024.",
+                "sources": ["https://techcrunch.com/2024/02/langchain-series-b"],
             }
         }
     )
@@ -175,6 +179,7 @@ class SynthesisReport(BaseModel):
                         "counter_evidence": [],
                         "reasoning": "...",
                         "hypothesis_text": "LangChain will dominate enterprise LLM tooling.",
+                        "sources": ["https://techcrunch.com/2024/02/langchain-series-b"],
                     }
                 ],
                 "top_repos": [],
