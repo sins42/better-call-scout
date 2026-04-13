@@ -38,16 +38,22 @@ from src.rag.ingestion import get_chroma_collection, ingest_hn_stories
 logger = logging.getLogger(__name__)
 
 
+async def _hn_ingestion_loop() -> None:
+    """Ingest HN stories at startup then refresh every 12 hours."""
+    while True:
+        try:
+            count = await ingest_hn_stories()
+            logger.info("HN ingestion complete — %d chunks stored", count)
+        except Exception:
+            logger.exception("HN ingestion failed")
+        await asyncio.sleep(12 * 60 * 60)  # 12 hours
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    collection = get_chroma_collection()
-    if collection.count() == 0:
-        logger.info("ChromaDB is empty — ingesting HN stories...")
-        count = await ingest_hn_stories()
-        logger.info("Ingested %d chunks into ChromaDB", count)
-    else:
-        logger.info("ChromaDB already has %d chunks — skipping ingestion", collection.count())
+    task = asyncio.create_task(_hn_ingestion_loop())
     yield
+    task.cancel()
 
 
 app = FastAPI(title="Better Call Scout", version="1.0.0", lifespan=lifespan)

@@ -8,8 +8,6 @@ import logging
 import os
 
 import requests
-
-logger = logging.getLogger(__name__)
 from google.adk.agents.llm_agent import LlmAgent
 from google.genai import types
 from tavily import AsyncTavilyClient
@@ -20,7 +18,10 @@ _RETRY_CONFIG = types.GenerateContentConfig(
     ),
 )
 
+logger = logging.getLogger(__name__)
+
 from src.models.schemas import NewsItem  # noqa: F401 — type reference only
+from src.rag.ingestion import _generate_doc_id, chunk_text, ingest_documents
 
 HN_API_BASE = "https://hacker-news.firebaseio.com/v0"
 _DEFAULT_HN_LIMIT = 30
@@ -110,15 +111,27 @@ async def _tavily_search(query: str, angle: str, max_results: int = 8) -> list[d
             search_depth="advanced",
         )
         results = []
+        docs, metadatas, ids = [], [], []
         for r in response.get("results", []):
+            url = r.get("url", "")
+            title = r.get("title", "")
+            content = r.get("content", "")
             results.append({
-                "title": r.get("title", ""),
-                "url": r.get("url", ""),
-                "content": f"[{angle}] {r.get('content', '')}",
+                "title": title,
+                "url": url,
+                "content": f"[{angle}] {content}",
                 "score": r.get("score", 0.0),
                 "published_date": r.get("published_date"),
                 "angle": angle,
             })
+            for i, chunk in enumerate(chunk_text(content or title)):
+                docs.append(chunk)
+                metadatas.append({"source_url": url, "title": title, "chunk_index": i, "source_type": "tavily"})
+                ids.append(_generate_doc_id(url, i))
+
+        if docs:
+            await asyncio.to_thread(ingest_documents, docs, metadatas, ids)
+
         logger.info("Tavily [%s] returned %d results for %r", angle, len(results), query)
         return results
     except Exception as e:

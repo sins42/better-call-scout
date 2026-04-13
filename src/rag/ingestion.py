@@ -143,7 +143,7 @@ def ingest_documents(documents: list[str], metadatas: list[dict], ids: list[str]
         Number of documents added.
     """
     collection = get_chroma_collection()
-    collection.add(documents=documents, metadatas=metadatas, ids=ids)
+    collection.upsert(documents=documents, metadatas=metadatas, ids=ids)
     return len(documents)
 
 
