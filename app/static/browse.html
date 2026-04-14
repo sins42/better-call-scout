@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Browse Corpus · Better Call Scout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ---- Theme tokens ---- */
+    :root {
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-hover: #f1f5f9;
+      --bg-bar: #f1f5f9;
+      --border: #e2e8f0;
+      --border-hover: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-muted: #64748b;
+      --text-subtle: #94a3b8;
+      --text-btn: #475569;
+      --skeleton-a: #e2e8f0;
+      --skeleton-b: #f1f5f9;
+      --shadow: rgba(0,0,0,.05);
+      --error-bg: #fef2f2;
+      --error-border: #fecaca;
+      --error-text: #b91c1c;
+      --error-heading: #991b1b;
+    }
+    [data-theme="dark"] {
+      --bg-page: #0d1117;
+      --bg-surface: #161b22;
+      --bg-surface-hover: #1e2730;
+      --bg-bar: #1e2730;
+      --border: rgba(255,255,255,.1);
+      --border-hover: rgba(255,255,255,.2);
+      --text-primary: #f1f5f9;
+      --text-muted: #8b95a7;
+      --text-subtle: #94a3b8;
+      --text-btn: #94a3b8;
+      --skeleton-a: #1e2730;
+      --skeleton-b: #252d3a;
+      --shadow: rgba(0,0,0,.3);
+      --error-bg: rgba(239,68,68,.1);
+      --error-border: rgba(239,68,68,.3);
+      --error-text: #fca5a5;
+      --error-heading: #fca5a5;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; color-scheme: light dark; }
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      transition: background .2s, color .2s;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ---- Nav ---- */
+    nav {
+      background: #0f172a;
+      padding: 0 32px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-logo {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+    .nav-badge {
+      background: #6366f1;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .nav-link {
+      margin-left: auto;
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.04);
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .nav-link:hover {
+      background: rgba(99,102,241,.25);
+      color: #a5b4fc;
+      border-color: #6366f1;
+    }
+
+    /* ---- Hero ---- */
+    #hero {
+      background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%);
+      padding: 56px 24px 64px;
+      text-align: center;
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      background: rgba(99,102,241,.18);
+      color: #a5b4fc;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(165,180,252,.2);
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-size: clamp(26px, 4.5vw, 42px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      margin-bottom: 14px;
+    }
+    .hero-title span { color: #a5b4fc; }
+    .hero-subtitle {
+      font-size: 15px;
+      color: #94a3b8;
+      max-width: 560px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ---- Main content ---- */
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      margin-bottom: 14px;
+    }
+
+    /* ---- Stat cards ---- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px var(--shadow);
+      animation: fadeIn .3s ease-out;
+      transition: background .2s, border-color .2s;
+    }
+    .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+    }
+    .stat-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .stat-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .legend-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 999px;
+      color: #fff;
+    }
+
+    /* ---- Source breakdown bar ---- */
+    .breakdown-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px var(--shadow);
+      margin-bottom: 36px;
+      animation: fadeIn .3s ease-out;
+      transition: background .2s, border-color .2s;
+    }
+    .breakdown-bar {
+      display: flex;
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--bg-bar);
+      margin-top: 6px;
+    }
+    .breakdown-seg {
+      height: 100%;
+      transition: width .3s ease-out;
+    }
+    .breakdown-labels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .breakdown-labels .label-swatch {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    /* ---- Filter input ---- */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    #filter-input {
+      flex: 1;
+      font-size: 14px;
+      font-family: inherit;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color .15s, background .2s, color .2s;
+    }
+    #filter-input::placeholder { color: var(--text-muted); }
+    #filter-input:focus { border-color: #6366f1; }
+    #filter-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* ---- Documents grid ---- */
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+    .doc-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 3px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      animation: fadeIn .25s ease-out;
+      transition: background .2s, border-color .2s;
+    }
+    .doc-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .doc-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .doc-pill {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      color: #fff;
+    }
+    .doc-chunks {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .doc-link {
+      font-size: 12px;
+      color: #6366f1;
+      text-decoration: none;
+      word-break: break-all;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .doc-link:hover { text-decoration: underline; }
+
+    /* ---- Pagination ---- */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 28px;
+    }
+    .page-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-btn);
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      min-width: 36px;
+    }
+    .page-btn:hover:not(:disabled) {
+      background: var(--bg-surface-hover);
+      border-color: var(--border-hover);
+    }
+    .page-btn.active {
+      background: #6366f1;
+      border-color: #6366f1;
+      color: #fff;
+    }
+    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .page-ellipsis { font-size: 13px; color: var(--text-subtle); padding: 0 4px; }
+
+    /* ---- Focus states ---- */
+    :focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; border-radius: 4px; }
+    nav :focus-visible { outline-color: #a5b4fc; }
+
+    /* ---- Skip link ---- */
+    .skip-link {
+      position: absolute; left: -9999px; z-index: 9999;
+      padding: 8px 16px; background: #6366f1; color: #fff;
+      font-size: 14px; font-weight: 600; border-radius: 0 0 8px 8px;
+      text-decoration: none;
+    }
+    .skip-link:focus { left: 16px; }
+
+    /* ---- Reduced motion ---- */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ---- Theme toggle ---- */
+    #theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.06);
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      flex-shrink: 0;
+    }
+    #theme-toggle:hover {
+      background: rgba(99,102,241,.25);
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+    #theme-toggle svg { display: block; pointer-events: none; }
+
+    /* ---- Skeleton + states ---- */
+    .skeleton {
+      background: linear-gradient(90deg, var(--skeleton-a) 0%, var(--skeleton-b) 50%, var(--skeleton-a) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite linear;
+      border-radius: 8px;
+    }
+    .skeleton-card {
+      height: 110px;
+    }
+    .empty-state, .error-state {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      box-shadow: 0 1px 3px var(--shadow);
+    }
+    .error-state {
+      border-color: var(--error-border);
+      background: var(--error-bg);
+      color: var(--error-text);
+    }
+    .empty-state h3, .error-state h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-primary);
+    }
+    .error-state h3 { color: var(--error-heading); }
+  </style>
+</head>
+<body>
+
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <nav>
+    <span class="nav-logo">Better Call Scout</span>
+    <span class="nav-badge">Beta</span>
+    <a href="/" class="nav-link">← Run Scout</a>
+    <button id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </nav>
+
+  <section id="hero">
+    <p class="hero-eyebrow">Vector DB inspector</p>
+    <h1 class="hero-title">Browse the <span>knowledge corpus</span></h1>
+    <p class="hero-subtitle">Everything Scout has indexed from Hacker News, dev.to, Reddit, Product Hunt, and Tavily — the grounding data that powers every RAG query.</p>
+  </section>
+
+  <main id="main">
+    <p class="section-label">Overview</p>
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Chunks</div><div class="skeleton skeleton-card"></div></div>
+      <div class="stat-card"><div class="stat-label">Unique Documents</div><div class="skeleton skeleton-card"></div></div>
+      <div class="stat-card"><div class="stat-label">Source Types</div><div class="skeleton skeleton-card"></div></div>
+    </div>
+
+    <p class="section-label">Source Distribution</p>
+    <div class="breakdown-card" id="breakdown-card">
+      <div class="skeleton" style="height: 14px;"></div>
+    </div>
+
+    <p class="section-label">Indexed Documents</p>
+    <div class="filter-row">
+      <input type="text" id="filter-input" placeholder="Filter by title…" autocomplete="off" />
+      <span id="filter-count"></span>
+    </div>
+    <div class="docs-grid" id="docs-grid">
+      <div class="doc-card"><div class="skeleton skeleton-card"></div></div>
+      <div class="doc-card"><div class="skeleton skeleton-card"></div></div>
+      <div class="doc-card"><div class="skeleton skeleton-card"></div></div>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </main>
+
+  <script>
+    // ---- Theme toggle ----
+    (function () {
+      const stored = localStorage.getItem('bcs-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = stored || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+
+    function initThemeToggle() {
+      const btn = document.getElementById('theme-toggle');
+      const sun = document.getElementById('icon-sun');
+      const moon = document.getElementById('icon-moon');
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('bcs-theme', theme);
+        const isDark = theme === 'dark';
+        sun.style.display  = isDark ? 'none'  : 'block';
+        moon.style.display = isDark ? 'block' : 'none';
+        btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+      }
+
+      applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
+
+      btn.addEventListener('click', () => {
+        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+      });
+    }
+
+    // ---- Accent palette for source types — keys matched to ingestion.py source_type values ----
+    const TYPE_COLORS = {
+      hackernews: "#6366f1",
+      tavily:     "#f59e0b",
+      devto:      "#10b981",
+      reddit:     "#ef4444",
+      producthunt:"#0ea5e9",
+      unknown:    "#64748b",
+    };
+    const FALLBACK_COLORS = ["#10b981", "#ef4444", "#0ea5e9", "#a855f7", "#ec4899"];
+
+    function colorFor(type, idx) {
+      return TYPE_COLORS[type] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[c]));
+    }
+
+    const PAGE_SIZE = 18;
+    let allDocs = [];
+    let filteredDocs = [];
+    let currentPage = 1;
+
+    function renderStats(data) {
+      const grid = document.getElementById("stats-grid");
+      const typeEntries = Object.entries(data.source_types || {});
+      const legendHtml = typeEntries.map(([t, n], i) =>
+        `<span class="legend-pill" style="background:${colorFor(t, i)}">${escapeHtml(t)} · ${n}</span>`
+      ).join("");
+
+      grid.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Total Chunks</div>
+          <div class="stat-value">${data.total_chunks.toLocaleString()}</div>
+          <div class="stat-sub">embedded text segments in ChromaDB</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Unique Documents</div>
+          <div class="stat-value">${data.total_documents.toLocaleString()}</div>
+          <div class="stat-sub">distinct source URLs ingested</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Source Types</div>
+          <div class="stat-value">${typeEntries.length}</div>
+          <div class="stat-legend">${legendHtml || '<span class="stat-sub">none</span>'}</div>
+        </div>
+      `;
+    }
+
+    function renderBreakdown(data) {
+      const card = document.getElementById("breakdown-card");
+      const total = data.total_chunks || 0;
+      const entries = Object.entries(data.source_types || {}).sort((a, b) => b[1] - a[1]);
+      if (!total || !entries.length) {
+        card.innerHTML = '<p style="font-size:13px;color:#64748b;">No source data to display.</p>';
+        return;
+      }
+      const segs = entries.map(([t, n], i) => {
+        const pct = (n / total) * 100;
+        return `<div class="breakdown-seg" style="width:${pct.toFixed(2)}%;background:${colorFor(t, i)}" title="${escapeHtml(t)}: ${n} (${pct.toFixed(1)}%)"></div>`;
+      }).join("");
+      const labels = entries.map(([t, n], i) => {
+        const pct = ((n / total) * 100).toFixed(1);
+        return `<span><span class="label-swatch" style="background:${colorFor(t, i)}"></span>${escapeHtml(t)} · ${n} chunks (${pct}%)</span>`;
+      }).join("");
+      card.innerHTML = `<div class="breakdown-bar">${segs}</div><div class="breakdown-labels">${labels}</div>`;
+    }
+
+    function renderPagination(total) {
+      const pag = document.getElementById("pagination");
+      const totalPages = Math.ceil(total / PAGE_SIZE);
+      if (totalPages <= 1) { pag.innerHTML = ""; return; }
+
+      const pages = [];
+      // Always show first, last, current ±1, with ellipsis gaps
+      const show = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]
+        .filter(p => p >= 1 && p <= totalPages));
+      const sorted = [...show].sort((a, b) => a - b);
+
+      let html = `<button class="page-btn" ${currentPage === 1 ? "disabled" : ""} onclick="goToPage(${currentPage - 1})" aria-label="Previous page">‹</button>`;
+      sorted.forEach((p, idx) => {
+        if (idx > 0 && p - sorted[idx - 1] > 1) {
+          html += `<span class="page-ellipsis">…</span>`;
+        }
+        html += `<button class="page-btn${p === currentPage ? " active" : ""}" onclick="goToPage(${p})" aria-label="Page ${p}" aria-current="${p === currentPage ? "page" : "false"}">${p}</button>`;
+      });
+      html += `<button class="page-btn" ${currentPage === totalPages ? "disabled" : ""} onclick="goToPage(${currentPage + 1})" aria-label="Next page">›</button>`;
+      pag.innerHTML = html;
+    }
+
+    function renderDocs(docs) {
+      filteredDocs = docs;
+      const grid = document.getElementById("docs-grid");
+      const countEl = document.getElementById("filter-count");
+      const totalPages = Math.ceil(docs.length / PAGE_SIZE);
+      if (currentPage > totalPages) currentPage = 1;
+
+      countEl.textContent = `${docs.length} document${docs.length === 1 ? "" : "s"}`;
+
+      if (!docs.length) {
+        grid.innerHTML = '<div class="empty-state"><h3>No matches</h3><p>Try a different filter.</p></div>';
+        renderPagination(0);
+        return;
+      }
+
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const page = docs.slice(start, start + PAGE_SIZE);
+
+      grid.innerHTML = page.map((d, i) => {
+        const color = colorFor(d.source_type, i);
+        const linkHtml = d.source_url
+          ? `<a class="doc-link" href="${escapeHtml(d.source_url)}" target="_blank" rel="noopener">${escapeHtml(d.source_url)}</a>`
+          : '<span class="doc-link" style="color:#94a3b8;">(no url)</span>';
+        return `
+          <div class="doc-card" style="border-left: 3px solid ${color};">
+            <div class="doc-title">${escapeHtml(d.title)}</div>
+            <div class="doc-meta">
+              <span class="doc-pill" style="background:${color}">${escapeHtml(d.source_type)}</span>
+              <span class="doc-chunks">${d.chunk_count} chunk${d.chunk_count === 1 ? "" : "s"}</span>
+            </div>
+            ${linkHtml}
+          </div>
+        `;
+      }).join("");
+
+      renderPagination(docs.length);
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      renderDocs(filteredDocs);
+      document.getElementById("docs-grid").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function applyFilter() {
+      currentPage = 1;
+      const q = document.getElementById("filter-input").value.trim().toLowerCase();
+      renderDocs(!q ? allDocs : allDocs.filter(d =>
+        (d.title || "").toLowerCase().includes(q) ||
+        (d.source_url || "").toLowerCase().includes(q)
+      ));
+    }
+
+    async function loadStats() {
+      try {
+        const resp = await fetch("/api/chroma/stats");
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        if (!data.total_chunks) {
+          document.getElementById("stats-grid").innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1;">
+              <h3>Corpus is empty</h3>
+              <p>Run an ingest or wait for the background HN loop to populate ChromaDB.</p>
+            </div>
+          `;
+          document.getElementById("breakdown-card").style.display = "none";
+          document.querySelector(".filter-row").style.display = "none";
+          document.getElementById("docs-grid").innerHTML = "";
+          return;
+        }
+
+        renderStats(data);
+        renderBreakdown(data);
+        allDocs = data.documents || [];
+        renderDocs(allDocs);
+      } catch (err) {
+        document.getElementById("stats-grid").innerHTML = `
+          <div class="error-state" style="grid-column:1/-1;">
+            <h3>Failed to load corpus stats</h3>
+            <p>${escapeHtml(err.message)}</p>
+          </div>
+        `;
+        document.getElementById("breakdown-card").style.display = "none";
+        document.querySelector(".filter-row").style.display = "none";
+        document.getElementById("docs-grid").innerHTML = "";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initThemeToggle();
+      document.getElementById("filter-input").addEventListener("input", applyFilter);
+      loadStats();
+    });
+  </script>
+</body>
+</html>

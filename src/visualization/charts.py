@@ -136,12 +136,12 @@ def category_heatmap(report: SynthesisReport) -> bytes:
     return _fig_to_png(fig)
 
 
-def hn_buzz_scatter(report: SynthesisReport, news_scores: dict[str, float] | None = None) -> bytes:
-    """Render a scatter plot of HN buzz score vs GitHub stars (VIZ-03).
+def buzz_scatter(report: SynthesisReport, news_scores: dict[str, float] | None = None) -> bytes:
+    """Render a scatter plot of news buzz score vs GitHub stars (VIZ-03).
 
     Args:
         report: SynthesisReport containing top_repos.
-        news_scores: Optional dict mapping repo name to its best HN score.
+        news_scores: Optional dict mapping repo name to its buzz score.
             If None, uses a synthetic score derived from star_velocity.
 
     Returns:
@@ -196,8 +196,8 @@ def hn_buzz_scatter(report: SynthesisReport, news_scores: dict[str, float] | Non
         )
 
     ax.set_xlabel("GitHub Stars")
-    ax.set_ylabel("HN Buzz Score")
-    ax.set_title("HN Buzz vs GitHub Stars")
+    ax.set_ylabel("News Buzz Score")
+    ax.set_title("News Buzz vs GitHub Stars")
     ax.set_ylim(0, 1.1)
 
     return _fig_to_png(fig)
@@ -250,4 +250,4 @@ def persona_score_bars(report: SynthesisReport) -> bytes:
     return _fig_to_png(fig)
 
 
-__all__ = ["star_velocity_chart", "category_heatmap", "hn_buzz_scatter", "persona_score_bars"]
+__all__ = ["star_velocity_chart", "category_heatmap", "buzz_scatter", "persona_score_bars"]

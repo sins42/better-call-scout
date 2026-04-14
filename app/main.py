@@ -31,29 +31,21 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from collections import defaultdict
+
 from src.orchestrator import generate_artifacts, run_pipeline
 from src.models.schemas import SynthesisReport
-from src.rag.ingestion import get_chroma_collection, ingest_hn_stories
+from src.rag.ingestion import get_chroma_collection
 
 logger = logging.getLogger(__name__)
 
 
-async def _hn_ingestion_loop() -> None:
-    """Ingest HN stories at startup then refresh every 12 hours."""
-    while True:
-        try:
-            count = await ingest_hn_stories()
-            logger.info("HN ingestion complete — %d chunks stored", count)
-        except Exception:
-            logger.exception("HN ingestion failed")
-        await asyncio.sleep(12 * 60 * 60)  # 12 hours
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(_hn_ingestion_loop())
+    logger.info("Server starting up — Better Call Scout v1.0.0")
+    logger.info("Server ready")
     yield
-    task.cancel()
+    logger.info("Server shutting down")
 
 
 app = FastAPI(title="Better Call Scout", version="1.0.0", lifespan=lifespan)
@@ -97,7 +89,7 @@ async def run_scout(req: RunRequest) -> dict:
         raise HTTPException(status_code=400, detail="Query must not exceed 500 characters")
 
     session_id = str(uuid.uuid4())
-    logger.info("Starting pipeline run session_id=%s query=%r", session_id, query)
+    logger.info("POST /run — request received | session_id=%s query=%r", session_id, query)
 
     try:
         # Add 120s timeout to prevent event-loop starvation (RESEARCH.md T-04-01-02)
@@ -113,9 +105,11 @@ async def run_scout(req: RunRequest) -> dict:
         raise HTTPException(status_code=500, detail=str(exc))
 
     # Generate all artifacts and store keyed by session_id
+    logger.info("POST /run — generating artifacts | session_id=%s", session_id)
     artifacts = await generate_artifacts(report)
     _artifact_store[session_id] = artifacts
 
+    logger.info("POST /run — response sent | session_id=%s", session_id)
     # Serialize with mode="json" to coerce HttpUrl → str (RESEARCH.md Pitfall 5)
     return {
         "session_id": session_id,
@@ -154,6 +148,8 @@ async def stream_progress(request: Request, query: str) -> EventSourceResponse:
     if len(query) > 500:
         raise HTTPException(status_code=400, detail="Query must not exceed 500 characters")
 
+    logger.info("GET /stream — SSE connection opened | query=%r", query)
+
     async def generator() -> AsyncGenerator[dict, None]:
         queue: asyncio.Queue[dict | None] = asyncio.Queue()
 
@@ -169,8 +165,10 @@ async def stream_progress(request: Request, query: str) -> EventSourceResponse:
                 )
                 # Store artifacts for download after SSE stream completes
                 session_id = str(uuid.uuid4())
+                logger.info("GET /stream — pipeline complete, generating artifacts | session_id=%s", session_id)
                 artifacts = await generate_artifacts(report)
                 _artifact_store[session_id] = artifacts
+                logger.info("GET /stream — sending complete event | session_id=%s", session_id)
                 await queue.put({
                     "event": "complete",
                     "data": report.model_dump_json(),
@@ -254,6 +252,75 @@ async def download_artifact(artifact: str, session_id: str) -> Response:
         media_type=mt,
         headers={"Content-Disposition": f"attachment; filename={artifact}"},
     )
+
+
+@app.get("/api/chroma/stats")
+async def chroma_stats() -> dict:
+    """Return aggregated stats about the ChromaDB corpus for the browse page.
+
+    Returns:
+        JSON dict with total_chunks, total_documents, source_types breakdown,
+        and a list of documents with per-document chunk counts.
+    """
+    logger.info("GET /api/chroma/stats — request received")
+    try:
+        collection = get_chroma_collection()
+        data = collection.get(include=["metadatas"])
+    except Exception as exc:
+        logger.exception("GET /api/chroma/stats — ChromaDB error")
+        raise HTTPException(status_code=503, detail=f"ChromaDB unavailable: {exc}")
+
+    metadatas = data.get("metadatas", []) or []
+    total_chunks = len(metadatas)
+
+    source_types: dict[str, int] = defaultdict(int)
+    docs_accum: dict[tuple[str, str], dict] = {}
+    for md in metadatas:
+        if not isinstance(md, dict):
+            continue
+        src_type = md.get("source_type", "unknown")
+        source_types[src_type] += 1
+
+        url = md.get("source_url", "")
+        title = md.get("title", "") or url or "(untitled)"
+        key = (url, title)
+        entry = docs_accum.get(key)
+        if entry is None:
+            docs_accum[key] = {
+                "title": title,
+                "source_url": url,
+                "source_type": src_type,
+                "chunk_count": 1,
+            }
+        else:
+            entry["chunk_count"] += 1
+
+    documents = sorted(docs_accum.values(), key=lambda d: d["chunk_count"], reverse=True)
+
+    logger.info(
+        "GET /api/chroma/stats — response sent | %d chunks, %d documents, %d source types",
+        total_chunks, len(documents), len(source_types),
+    )
+    return {
+        "total_chunks": total_chunks,
+        "total_documents": len(documents),
+        "source_types": dict(source_types),
+        "documents": documents,
+    }
+
+
+@app.get("/browse", response_class=HTMLResponse)
+async def browse() -> HTMLResponse:
+    """Serve the vector DB browse page.
+
+    Returns:
+        HTMLResponse reading app/static/browse.html from disk.
+    """
+    logger.info("GET /browse — request received")
+    html_path = _static_dir / "browse.html"
+    if not html_path.exists():
+        raise HTTPException(status_code=503, detail="Browse page missing")
+    return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 
 @app.get("/", response_class=HTMLResponse)
