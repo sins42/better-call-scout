@@ -5,6 +5,7 @@ Provides deterministic IDs to prevent duplicate documents on re-ingestion.
 """
 import hashlib
 import logging
+import threading
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
@@ -16,23 +17,35 @@ COLLECTION_NAME = "scout-corpus"
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 
+_client: chromadb.ClientAPI | None = None
+_collection: chromadb.Collection | None = None
+_lock = threading.Lock()
+
 
 def get_chroma_collection() -> chromadb.Collection:
     """Get or create the ChromaDB collection with MiniLM embeddings.
+
+    Uses a module-level singleton to prevent concurrent-thread race conditions
+    during ChromaDB's Rust backend initialization.
 
     Returns:
         A ChromaDB Collection configured with SentenceTransformerEmbeddingFunction
         using the all-MiniLM-L6-v2 model.
     """
-    logger.debug("Opening ChromaDB collection %r at %s", COLLECTION_NAME, CHROMA_PATH)
-    client = chromadb.PersistentClient(path=CHROMA_PATH)
-    embedding_fn = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
-    collection = client.get_or_create_collection(
-        name=COLLECTION_NAME,
-        embedding_function=embedding_fn,
-    )
-    logger.debug("ChromaDB collection %r ready (%d docs)", COLLECTION_NAME, collection.count())
-    return collection
+    global _client, _collection
+    if _collection is not None:
+        return _collection
+    with _lock:
+        if _collection is None:
+            logger.debug("Initializing ChromaDB client at %s", CHROMA_PATH)
+            _client = chromadb.PersistentClient(path=CHROMA_PATH)
+            embedding_fn = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+            _collection = _client.get_or_create_collection(
+                name=COLLECTION_NAME,
+                embedding_function=embedding_fn,
+            )
+            logger.debug("ChromaDB collection %r ready (%d docs)", COLLECTION_NAME, _collection.count())
+    return _collection
 
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> list[str]:
