@@ -1,0 +1,50 @@
+# Ignore everything in .gitignore
+.gitignore
+
+# Secrets — never upload to Cloud Build
+.env
+.envrc
+
+# Local virtual environment — dependencies are installed during Docker build
+.venv/
+env/
+venv/
+
+# Local ChromaDB data — not needed in the build context
+chroma_data/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Test files — not needed in production image
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Planning/dev artifacts
+.planning/
+*.md.bak
+final_plan.md
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Git history — not needed in build context
+.git/
+
+# uv Python version pin (not needed in container)
+.python-version
+
+# Misc
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
