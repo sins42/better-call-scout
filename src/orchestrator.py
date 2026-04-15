@@ -24,6 +24,7 @@ from google.genai import types
 # one parent at a time. collection_pipeline already owns collection_parallel +
 # critic_agent, and analysis_layer already owns the three analyst loops.
 # We must reuse these existing composites rather than re-wrapping the leaf agents.
+from src.agents.guardrail_agent import QueryRejectedError, check_query
 from src.agents.collection import collection_pipeline  # collection_parallel + critic_agent
 from src.agents.analysis import analysis_layer  # vc/dev/journalist analyst loops (ParallelAgent)
 from src.agents.synthesis_agent import (
@@ -82,6 +83,9 @@ async def run_pipeline(
     query = query.strip()
     if len(query) > 500:
         query = query[:500]
+
+    # Guardrail: reject non-technical queries before launching the expensive pipeline.
+    await check_query(query)
 
     # Use a unique user_id per request so sessions don't cross-contaminate (T-04-01-02).
     user_id = f"scout-{uuid.uuid4().hex[:8]}"
@@ -231,4 +235,4 @@ async def generate_artifacts(report: SynthesisReport) -> dict[str, bytes | str]:
     }
 
 
-__all__ = ["run_pipeline", "generate_artifacts", "pipeline_agent"]
+__all__ = ["run_pipeline", "generate_artifacts", "pipeline_agent", "QueryRejectedError"]

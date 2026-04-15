@@ -33,7 +33,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from collections import defaultdict
 
-from src.orchestrator import generate_artifacts, run_pipeline
+from src.orchestrator import generate_artifacts, run_pipeline, QueryRejectedError
 from src.models.schemas import SynthesisReport
 from src.rag.ingestion import get_chroma_collection
 
@@ -97,6 +97,9 @@ async def run_scout(req: RunRequest) -> dict:
             run_pipeline(query),
             timeout=300.0,
         )
+    except QueryRejectedError as exc:
+        logger.info("POST /run — query rejected by guardrail | session_id=%s reason=%s", session_id, exc)
+        raise HTTPException(status_code=400, detail=str(exc))
     except asyncio.TimeoutError:
         logger.error("Pipeline timed out for session_id=%s", session_id)
         raise HTTPException(status_code=504, detail="Pipeline timed out after 120 seconds")
@@ -175,6 +178,9 @@ async def stream_progress(request: Request, query: str) -> EventSourceResponse:
                 })
                 # Also emit the session_id so the client can construct download URLs
                 await queue.put({"event": "session_id", "data": session_id})
+            except QueryRejectedError as exc:
+                logger.info("GET /stream — query rejected by guardrail | query=%r reason=%s", query, exc)
+                await queue.put({"event": "error_event", "data": str(exc)})
             except asyncio.TimeoutError:
                 await queue.put({"event": "error_event", "data": "Pipeline timed out after 120 seconds"})
             except Exception as exc:
