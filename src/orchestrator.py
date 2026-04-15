@@ -35,7 +35,7 @@ from src.agents.synthesis_agent import (
 from src.models.schemas import RepoData, SynthesisReport
 from src.visualization.charts import (
     category_heatmap,
-    hn_buzz_scatter,
+    buzz_scatter,
     persona_score_bars,
     star_velocity_chart,
 )
@@ -90,9 +90,9 @@ async def run_pipeline(
         if progress_cb:
             await progress_cb(stage, status)
 
+    logger.info("Pipeline started | user_id=%s query=%r", user_id, query)
     await _emit("collection", "started")
-    logger.info("Pipeline started for query: %r", query)
-    logger.info("Stage: collection started")
+    logger.info("Stage: collection — started")
 
     # Seed session state with the query. Collection agents read "query" from state.
     # Analyst prompts read {repo_data_json}, {news_items_json}, {rag_chunks_json}.
@@ -145,7 +145,7 @@ async def run_pipeline(
         author = getattr(event, "author", None)
         if author in stage_start_map and author not in _started_stages:
             stage = stage_start_map[author]
-            logger.info("Stage: %s started (author=%s)", stage, author)
+            logger.info("Stage: %s — started (agent=%s)", stage, author)
             await _emit(stage, "started")
             _started_stages.add(author)
         if author in _stage_map:
@@ -154,11 +154,11 @@ async def run_pipeline(
             if is_final is not None and (
                 callable(is_final) and is_final() or not callable(is_final) and is_final
             ):
-                logger.info("Stage: %s %s (author=%s)", stage, status, author)
+                logger.info("Stage: %s — %s (agent=%s)", stage, status, author)
                 await _emit(stage, status)
 
     await _emit("synthesis", "complete")
-    logger.info("Pipeline complete for query: %r", query)
+    logger.info("Pipeline complete | query=%r", query)
 
     # Retrieve final session state and extract typed SynthesisReport.
     final_session = await _runner.session_service.get_session(
@@ -208,16 +208,18 @@ async def generate_artifacts(report: SynthesisReport) -> dict[str, bytes | str]:
             "top_repos.csv" -> str
             "chart_1.png" -> bytes  (star velocity)
             "chart_2.png" -> bytes  (category heatmap)
-            "chart_3.png" -> bytes  (HN buzz scatter)
+            "chart_3.png" -> bytes  (news buzz scatter)
             "chart_4.png" -> bytes  (persona scores)
     """
+    logger.info("Generating artifacts: charts + report markdown + CSV")
     # Run all four chart functions in thread pool concurrently.
     chart_1, chart_2, chart_3, chart_4 = await asyncio.gather(
         asyncio.to_thread(star_velocity_chart, report),
         asyncio.to_thread(category_heatmap, report),
-        asyncio.to_thread(hn_buzz_scatter, report),
+        asyncio.to_thread(buzz_scatter, report),
         asyncio.to_thread(persona_score_bars, report),
     )
+    logger.info("Artifact generation complete")
 
     return {
         "scout_report.md": generate_scout_report_md(report),

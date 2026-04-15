@@ -1,15 +1,15 @@
-"""HN + Tavily Agent — Collection Layer (Person 1: Raghav)
+"""Tech News + Tavily Agent — Collection Layer (Person 1: Raghav)
 
-HN Firebase API for top/best stories.
-Tavily search with persona-targeted queries for richer, analyst-specific signals.
+Tech-focused sources: dev.to (developer articles), Reddit (r/programming + friends),
+Product Hunt (new tech launches), plus persona-targeted Tavily searches.
 """
 import asyncio
 import logging
 import os
+import re
+from urllib.parse import urlparse
 
 import requests
-
-logger = logging.getLogger(__name__)
 from google.adk.agents.llm_agent import LlmAgent
 from google.genai import types
 from tavily import AsyncTavilyClient
@@ -20,70 +20,232 @@ _RETRY_CONFIG = types.GenerateContentConfig(
     ),
 )
 
+logger = logging.getLogger(__name__)
+
 from src.models.schemas import NewsItem  # noqa: F401 — type reference only
+from src.rag.ingestion import _generate_doc_id, chunk_text, ingest_documents
 
-HN_API_BASE = "https://hacker-news.firebaseio.com/v0"
-_DEFAULT_HN_LIMIT = 30
+_USER_AGENT = "better-call-scout/0.1 (tech scout research bot)"
+_REDDIT_SUBS = "programming+MachineLearning+webdev+devops+rust+golang"
 
 
-async def fetch_hn_top_stories(limit: int = 30) -> dict:
-    """Fetch top HackerNews stories with details via the Firebase API.
+def _slugify(query: str) -> str:
+    """Lowercase, strip non-alphanumerics, collapse whitespace to dashes."""
+    s = re.sub(r"[^a-z0-9\s-]", "", query.lower()).strip()
+    return re.sub(r"\s+", "-", s)
 
-    Fetches story IDs from the HN top-stories endpoint, then concurrently
-    retrieves individual story details using asyncio.gather. Stories without
-    a URL fall back to the HN item URL.
+
+def _ingest_items(items: list[dict], source_type: str) -> None:
+    """Chunk items' content and upsert into ChromaDB with source_type metadata."""
+    docs, metadatas, ids = [], [], []
+    for it in items:
+        url = it.get("url", "")
+        title = it.get("title", "")
+        content = it.get("content") or title
+        for i, chunk in enumerate(chunk_text(content)):
+            docs.append(chunk)
+            metadatas.append({
+                "source_url": url,
+                "title": title,
+                "chunk_index": i,
+                "source_type": source_type,
+            })
+            ids.append(_generate_doc_id(url, i))
+    if docs:
+        ingest_documents(docs, metadatas, ids)
+
+
+async def fetch_devto_articles(query: str, limit: int = 30) -> dict:
+    """Fetch top dev.to articles for a topic via the public articles API.
+
+    Slugifies the query into a tag filter; falls back to top articles if the
+    tag yields no hits. Ingests article descriptions into the vector DB.
 
     Args:
-        limit: Maximum number of stories to fetch. Defaults to 30.
+        query: Topic keyword (e.g. "rust wasm").
+        limit: Max articles to return.
 
     Returns:
-        Dictionary with 'stories' key containing a list of story dicts.
-        Each dict has keys: title, url, score, time, by.
+        Dict with 'articles' key — list of dicts with title, url, content,
+        score (positive_reactions_count), published_date, by.
+    """
+    tag = _slugify(query).split("-")[0]
+
+    def _fetch(url: str) -> list[dict]:
+        resp = requests.get(
+            url,
+            headers={"User-Agent": _USER_AGENT, "Accept": "application/json"},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    logger.info("Fetching dev.to articles | tag=%r", tag)
+    try:
+        raw = await asyncio.to_thread(
+            _fetch,
+            f"https://dev.to/api/articles?tag={tag}&per_page={limit}&top=7",
+        )
+        if not raw:
+            raw = await asyncio.to_thread(
+                _fetch, f"https://dev.to/api/articles?per_page={limit}&top=7"
+            )
+    except Exception as e:
+        logger.warning("dev.to fetch failed: %s", e)
+        return {"articles": []}
+
+    articles = [
+        {
+            "title": a.get("title", ""),
+            "url": a.get("url", ""),
+            "content": f"[devto] {a.get('description', '') or a.get('title', '')}",
+            "score": a.get("positive_reactions_count", 0),
+            "published_date": a.get("published_at"),
+            "by": (a.get("user") or {}).get("username", ""),
+        }
+        for a in raw
+        if a.get("url")
+    ]
+    await asyncio.to_thread(_ingest_items, articles, "devto")
+    logger.info("dev.to fetch complete: %d articles", len(articles))
+    return {"articles": articles}
+
+
+async def fetch_reddit_posts(query: str, limit: int = 30) -> dict:
+    """Search Reddit tech subreddits for a query via the public JSON API.
+
+    Uses a multi-subreddit search across r/programming, r/MachineLearning,
+    r/webdev, r/devops, r/rust, r/golang sorted by top over the past month.
+
+    Args:
+        query: Search query string.
+        limit: Max posts to return.
+
+    Returns:
+        Dict with 'posts' key — list of dicts with title, url, content
+        (selftext), score (ups), published_date, by (author).
     """
 
-    def _fetch_ids() -> list[int]:
-        resp = requests.get(f"{HN_API_BASE}/topstories.json", timeout=30)
+    def _fetch() -> dict:
+        resp = requests.get(
+            f"https://www.reddit.com/r/{_REDDIT_SUBS}/search.json",
+            params={
+                "q": query,
+                "restrict_sr": "true",
+                "sort": "top",
+                "t": "month",
+                "limit": limit,
+            },
+            headers={"User-Agent": _USER_AGENT},
+            timeout=30,
+        )
         resp.raise_for_status()
-        return resp.json()[:limit]
+        return resp.json()
 
-    logger.info("Fetching HN top %d story IDs", limit)
-    story_ids = await asyncio.to_thread(_fetch_ids)
-    logger.info("Fetching details for %d HN stories", len(story_ids))
+    logger.info("Fetching Reddit posts | query=%r", query)
+    try:
+        raw = await asyncio.to_thread(_fetch)
+    except Exception as e:
+        logger.warning("Reddit fetch failed: %s", e)
+        return {"posts": []}
 
-    async def _fetch_story(sid: int) -> dict | None:
-        def _do_fetch(story_id: int = sid) -> dict:
-            for attempt in range(3):
-                try:
-                    resp = requests.get(f"{HN_API_BASE}/item/{story_id}.json", timeout=30)
-                    resp.raise_for_status()
-                    return resp.json()
-                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-                    if attempt == 2:
-                        raise
-                    import time
-                    time.sleep(0.5 * (attempt + 1))
+    children = (raw.get("data") or {}).get("children", [])
+    posts = []
+    for c in children:
+        d = c.get("data", {})
+        permalink = d.get("permalink", "")
+        url = d.get("url") or f"https://www.reddit.com{permalink}"
+        selftext = d.get("selftext", "") or d.get("title", "")
+        posts.append({
+            "title": d.get("title", ""),
+            "url": url,
+            "content": f"[reddit r/{d.get('subreddit', '')}] {selftext}",
+            "score": d.get("ups", 0),
+            "published_date": d.get("created_utc"),
+            "by": d.get("author", ""),
+        })
+    await asyncio.to_thread(_ingest_items, posts, "reddit")
+    logger.info("Reddit fetch complete: %d posts", len(posts))
+    return {"posts": posts}
 
-        try:
-            story = await asyncio.to_thread(_do_fetch)
-        except Exception as e:
-            logger.warning("Failed to fetch HN story %d after retries: %s", sid, e)
-            return None
-        if story and story.get("type") == "story":
-            return {
-                "title": story.get("title", ""),
-                "url": story.get(
-                    "url", f"https://news.ycombinator.com/item?id={sid}"
-                ),
-                "score": story.get("score", 0),
-                "time": story.get("time", 0),
-                "by": story.get("by", ""),
-            }
-        return None
 
-    story_results = await asyncio.gather(*[_fetch_story(sid) for sid in story_ids])
-    stories = [s for s in story_results if s is not None]
-    logger.info("HN fetch complete: %d/%d stories retrieved", len(stories), len(story_ids))
-    return {"stories": stories}
+async def fetch_producthunt_posts(query: str, limit: int = 20) -> dict:
+    """Search Product Hunt launches matching a topic via the GraphQL v2 API.
+
+    Requires PRODUCT_HUNT_TOKEN env var (developer token from
+    https://api.producthunt.com/v2/oauth/applications). Returns empty list if
+    token missing.
+
+    Args:
+        query: Topic to search for.
+        limit: Max posts to return.
+
+    Returns:
+        Dict with 'posts' key — list of dicts with title, url, content,
+        score (votesCount), published_date, by (maker).
+    """
+    token = os.environ.get("PRODUCT_HUNT_TOKEN")
+    if not token:
+        logger.warning("Product Hunt: PRODUCT_HUNT_TOKEN not set — skipping")
+        return {"posts": []}
+
+    gql_query = """
+    query ($first: Int!) {
+      posts(first: $first, order: RANKING) {
+        edges {
+          node {
+            name
+            tagline
+            description
+            url
+            votesCount
+            createdAt
+            website
+          }
+        }
+      }
+    }
+    """
+    # Product Hunt v2 doesn't expose free-text search in the posts query;
+    # we fetch top-ranked recent posts and pass all to the LLM for relevance filtering.
+
+    def _fetch() -> dict:
+        resp = requests.post(
+            "https://api.producthunt.com/v2/api/graphql",
+            json={"query": gql_query, "variables": {"first": 50}},
+            headers={
+                "Authorization": f"Bearer {token}",
+                "User-Agent": _USER_AGENT,
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    logger.info("Fetching Product Hunt posts | query=%r", query)
+    try:
+        raw = await asyncio.to_thread(_fetch)
+    except Exception as e:
+        logger.warning("Product Hunt fetch failed: %s", e)
+        return {"posts": []}
+
+    edges = (((raw.get("data") or {}).get("posts") or {}).get("edges")) or []
+    posts = []
+    for edge in edges:
+        node = edge.get("node", {})
+        posts.append({
+            "title": node.get("name", ""),
+            "url": node.get("website") or node.get("url", ""),
+            "content": f"[producthunt] {node.get('tagline', '')} — {node.get('description', '')}",
+            "score": node.get("votesCount", 0),
+            "published_date": node.get("createdAt"),
+            "by": "",
+        })
+        if len(posts) >= limit:
+            break
+    await asyncio.to_thread(_ingest_items, posts, "producthunt")
+    logger.info("Product Hunt fetch complete: %d posts", len(posts))
+    return {"posts": posts}
 
 
 async def _tavily_search(query: str, angle: str, max_results: int = 8) -> list[dict]:
@@ -100,9 +262,11 @@ async def _tavily_search(query: str, angle: str, max_results: int = 8) -> list[d
     """
     api_key = os.environ.get("TAVILY_API_KEY")
     if not api_key:
+        logger.warning("Tavily [%s]: TAVILY_API_KEY not set — skipping", angle)
         return []
     try:
         client = AsyncTavilyClient(api_key)
+        logger.info("Tavily [%s]: sending request | query=%r", angle, query)
         response = await client.search(
             query=query,
             topic="general",
@@ -110,15 +274,29 @@ async def _tavily_search(query: str, angle: str, max_results: int = 8) -> list[d
             search_depth="advanced",
         )
         results = []
+        docs, metadatas, ids = [], [], []
         for r in response.get("results", []):
+            url = r.get("url", "")
+            title = r.get("title", "")
+            content = r.get("content", "")
+            domain = urlparse(url).netloc.removeprefix("www.")
             results.append({
-                "title": r.get("title", ""),
-                "url": r.get("url", ""),
-                "content": f"[{angle}] {r.get('content', '')}",
+                "title": title,
+                "url": url,
+                "content": f"[{angle} | {domain}] {content}",
                 "score": r.get("score", 0.0),
                 "published_date": r.get("published_date"),
                 "angle": angle,
+                "domain": domain,
             })
+            for i, chunk in enumerate(chunk_text(content or title)):
+                docs.append(chunk)
+                metadatas.append({"source_url": url, "title": title, "chunk_index": i, "source_type": "tavily"})
+                ids.append(_generate_doc_id(url, i))
+
+        if docs:
+            await asyncio.to_thread(ingest_documents, docs, metadatas, ids)
+
         logger.info("Tavily [%s] returned %d results for %r", angle, len(results), query)
         return results
     except Exception as e:
@@ -197,16 +375,25 @@ hn_tavily_agent = LlmAgent(
     model="gemini-2.0-flash",
     instruction="""You are a tech intelligence scout. Given a topic query from session state key 'query':
 
-1. Call fetch_hn_top_stories to get trending Hacker News stories.
-2. Call search_tavily_vc with the query to get funding, market size, and M&A signals.
-3. Call search_tavily_dev with the query to get production adoption, hiring, and benchmark signals.
-4. Call search_tavily_journalist with the query to get press coverage, community sentiment, and hype analysis.
+1. Call fetch_devto_articles with the query to get developer articles from dev.to.
+2. Call fetch_reddit_posts with the query to get discussions from tech subreddits.
+3. Call fetch_producthunt_posts with the query to get recent Product Hunt launches.
+4. Call search_tavily_vc with the query to get funding, market size, and M&A signals.
+5. Call search_tavily_dev with the query to get production adoption, hiring, and benchmark signals.
+6. Call search_tavily_journalist with the query to get press coverage, community sentiment, and hype analysis.
 
-Merge all results (HN stories + all Tavily results) into a single JSON array of news items.
-Each item must have: title, url, content (which includes an [angle] prefix), score, published_date.
+Merge all results into a single JSON array of news items.
+Each item must have: title, url, content (which includes a source/angle prefix), score, published_date.
 Return the merged array as JSON in the output.""",
-    description="Fetches HN stories and persona-targeted Tavily web searches for a given topic.",
-    tools=[fetch_hn_top_stories, search_tavily_vc, search_tavily_dev, search_tavily_journalist],
+    description="Fetches dev.to, Reddit, Product Hunt, and persona-targeted Tavily results for a topic.",
+    tools=[
+        fetch_devto_articles,
+        fetch_reddit_posts,
+        fetch_producthunt_posts,
+        search_tavily_vc,
+        search_tavily_dev,
+        search_tavily_journalist,
+    ],
     output_key="hn_tavily_results",
     generate_content_config=_RETRY_CONFIG,
 )

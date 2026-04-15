@@ -167,11 +167,11 @@ Prior draft hypothesis (empty on first pass):
 {journalist_draft_output}
 
 Your analysis must evaluate:
-1. HN sentiment score and community reaction — what is the HN crowd actually saying?
+1. Community sentiment and reaction — what are developers and Reddit actually saying?
 2. Media coverage density — is the story already saturated or undercovered?
 3. Narrative arc — is there a "David vs Goliath", "Microsoft ignored this", or "open-source beats enterprise" angle?
 4. Incumbent threats — which big companies are threatened, and are they paying attention?
-5. Whether mainstream press is late to the story — early HN traction + zero TechCrunch = undercovered opportunity
+5. Whether mainstream press is late to the story — early community traction + zero TechCrunch = undercovered opportunity
 
 If there is critic feedback, address the specific objections raised. Do not repeat the same reasoning.
 
@@ -196,6 +196,6 @@ Your critique must:
 2. Surface counter-evidence the journalist downweighted — what contradicts the "real story" framing?
 3. Challenge each reasoning step — where does the narrative logic break down?
 4. Identify survivorship bias — are similar "undercovered" stories that went nowhere being ignored?
-5. Question the sentiment interpretation — could HN sentiment be misleading or unrepresentative?
+5. Question the sentiment interpretation — could community sentiment be misleading or unrepresentative?
 
 Be specific, harsh, and constructive. Your output is free-text critique consumed by the journalist on the next iteration."""
