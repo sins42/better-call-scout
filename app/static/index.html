@@ -1427,10 +1427,22 @@
 
     // ---- renderAnalystCards ----
     function renderAnalystCards(report) {
+      // Build a set of persona values that are present in the report
+      const presentPersonas = new Set((report.hypotheses || []).map(h => h.persona));
+
+      // Update CAROUSEL_ORDER to only include present personas (in fixed display order)
+      const personaOrder = ['vc_analyst', 'developer_analyst', 'journalist'];
+      const activeOrder = personaOrder.filter(p => presentPersonas.has(p));
+      CAROUSEL_ORDER.length = 0;
+      activeOrder.forEach(p => CAROUSEL_ORDER.push(p));
+
       document.querySelectorAll('.analyst-card').forEach(card => {
         const persona = card.dataset.persona;
         const meta = PERSONA_META[persona];
         const hypothesis = (report.hypotheses || []).find(h => h.persona === persona);
+
+        // Show/hide card based on whether this persona is in the report
+        card.style.display = presentPersonas.has(persona) ? '' : 'none';
 
         const fill = card.querySelector('.conf-bar-fill');
         const pct = Math.round(((hypothesis && hypothesis.confidence_score) || 0) * 100);
@@ -1487,6 +1499,23 @@
         }
       });
 
+      // Rebuild carousel dots to match only the active personas
+      const dotsContainer = document.querySelector('.carousel-dots');
+      if (dotsContainer) {
+        const dotLabels = { vc_analyst: 'VC Analyst', developer_analyst: 'Developer', journalist: 'Journalist' };
+        dotsContainer.innerHTML = '';
+        CAROUSEL_ORDER.forEach((p, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+          btn.dataset.idx = String(i);
+          btn.setAttribute('role', 'tab');
+          btn.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+          btn.setAttribute('aria-label', dotLabels[p] || p);
+          btn.addEventListener('click', function() { goToSlide(parseInt(this.dataset.idx, 10)); });
+          dotsContainer.appendChild(btn);
+        });
+      }
+
       // Wire evidence toggles (re-wire after each render)
       document.querySelectorAll('.evidence-toggle-btn').forEach(btn => {
         btn.onclick = function() {
@@ -1520,7 +1549,22 @@
       const card = document.getElementById('pcard-' + key);
       cb.checked = !cb.checked;
       card.classList.toggle('selected', cb.checked);
-      // Analyst cards in the carousel are always visible regardless of persona selection
+      updateRunButtonPersonaState();
+    }
+
+    function getSelectedPersonas() {
+      const keys = [];
+      if (document.getElementById('cb-vc').checked)         keys.push('vc');
+      if (document.getElementById('cb-dev').checked)        keys.push('dev');
+      if (document.getElementById('cb-journalist').checked) keys.push('journalist');
+      return keys;
+    }
+
+    function updateRunButtonPersonaState() {
+      const btn = document.getElementById('run-btn');
+      const noneSelected = getSelectedPersonas().length === 0;
+      btn.disabled = noneSelected;
+      btn.title = noneSelected ? 'Select at least one analyst perspective' : '';
     }
 
     // ---- Char counter ----
@@ -2016,7 +2060,9 @@
       startTimer();
       document.getElementById('progress-strip').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      const es = new EventSource('/stream?query=' + encodeURIComponent(query));
+      const selectedPersonas = getSelectedPersonas();
+      const personasParam = selectedPersonas.length > 0 ? '&personas=' + encodeURIComponent(selectedPersonas.join(',')) : '';
+      const es = new EventSource('/stream?query=' + encodeURIComponent(query) + personasParam);
 
       es.addEventListener('collection_started', () => setStage('stage-collection', 'active'));
       es.addEventListener('collection_complete', () => setStage('stage-collection', 'complete'));

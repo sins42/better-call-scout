@@ -64,6 +64,7 @@ def build_synthesis_report_from_state(
     state: dict,
     query: str,
     repos: list[RepoData],
+    personas: set[str] | None = None,
 ) -> SynthesisReport:
     """Construct SynthesisReport directly from session state if Gemini output is malformed.
 
@@ -71,15 +72,29 @@ def build_synthesis_report_from_state(
         state: ADK session state dict after analysis_layer completes.
         query: The original user scout query.
         repos: List of RepoData objects from the collection layer.
+        personas: Set of short persona keys that were run, e.g. {"vc", "dev"}.
+                  Defaults to all three if None.
 
     Returns:
-        SynthesisReport with the three analyst hypotheses and top repos.
+        SynthesisReport with the selected analyst hypotheses and top repos.
 
     Raises:
         ValueError: If any required hypothesis key is missing or invalid in state.
     """
+    if personas is None:
+        personas = {"vc", "dev", "journalist"}
+
+    draft_keys = {
+        "vc":         "vc_draft_output",
+        "dev":        "dev_draft_output",
+        "journalist": "journalist_draft_output",
+    }
+
     hypotheses: list[AnalystHypothesis] = []
-    for key in ("vc_draft_output", "dev_draft_output", "journalist_draft_output"):
+    for persona_key in ("vc", "dev", "journalist"):
+        if persona_key not in personas:
+            continue
+        key = draft_keys[persona_key]
         raw = state.get(key)
         if not raw:
             raise ValueError(f"State key '{key}' is empty — analyst loop may not have completed")
