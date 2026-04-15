@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["uv", "run", "streamlit", "run", "app/streamlit_app.py", "--server.port=8080", "--server.address=0.0.0.0"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
