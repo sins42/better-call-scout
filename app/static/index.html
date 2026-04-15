@@ -637,6 +637,100 @@
       line-height: 1.6;
     }
 
+    /* ---- Analyst Carousel ---- */
+    @keyframes arrowPop { 0%,100%{transform:scale(1)} 40%{transform:scale(.84)} }
+    .carousel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .carousel-controls { display: flex; align-items: center; gap: 10px; }
+    .carousel-arrow {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, color .15s, background .15s;
+      flex-shrink: 0;
+    }
+    .carousel-arrow:hover { border-color: #6366f1; color: #6366f1; background: color-mix(in srgb, #6366f1 8%, var(--bg-surface)); }
+    .carousel-arrow.popping { animation: arrowPop .2s ease; }
+    .carousel-dots { display: flex; gap: 6px; align-items: center; }
+    .carousel-dot {
+      width: 8px; height: 8px;
+      border-radius: 4px;
+      border: none;
+      background: var(--border);
+      cursor: pointer; padding: 0;
+      transition: all .25s cubic-bezier(.4,0,.2,1);
+    }
+    .carousel-dot.active { width: 22px; background: #6366f1; }
+    .carousel-viewport { overflow: hidden; border-radius: 12px; }
+    .carousel-track {
+      display: flex;
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      will-change: transform;
+    }
+    .analyst-card {
+      flex: 0 0 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px var(--shadow);
+      transition: background .2s, border-color .2s;
+    }
+    .evidence-section { margin-top: 18px; }
+    .evidence-toggle-btn {
+      background: var(--bg-bar);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text-muted);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      padding: 7px 14px;
+      font-family: inherit;
+      transition: all .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .evidence-toggle-btn:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+    .evidence-list {
+      margin-top: 14px;
+      background: var(--bg-bar);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .evidence-list h3 {
+      font-size: 12px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .6px;
+      margin-bottom: 8px; margin-top: 14px;
+    }
+    .evidence-list h3:first-child { margin-top: 0; }
+    .evidence-items, .counter-items {
+      list-style: none; padding: 0;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .evidence-items li::before { content: '↳ '; color: #10b981; font-weight: 700; }
+    .counter-items li::before { content: '↳ '; color: #f59e0b; font-weight: 700; }
+    .sources-items { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .sources-items li a {
+      font-size: 12px; color: #6366f1; text-decoration: none;
+      background: color-mix(in srgb, #6366f1 10%, var(--bg-surface));
+      padding: 3px 10px 3px 6px; border-radius: 999px;
+      border: 1px solid color-mix(in srgb, #6366f1 30%, var(--border));
+      transition: background .15s;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .sources-items li a img.favicon { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+    .sources-items li a:hover { background: color-mix(in srgb, #6366f1 20%, var(--bg-surface)); }
+    .evidence-items li, .counter-items li { font-size: 14px; color: var(--text-body); line-height: 1.6; }
+    .hypothesis-text { font-size: 15px; line-height: 1.7; color: var(--text-body); }
+
     /* ---- Charts ---- */
     #charts-panel { display: none; margin-top: 36px; animation: fadeIn .35s ease; }
     #charts-grid {
@@ -792,30 +886,102 @@
       transition: all .15s;
     }
     #report-toggle-btn:hover { border-color: #6366f1; color: #6366f1; }
-    #full-report-body {
+    #full-report-body { display: flex; flex-direction: column; gap: 0; }
+
+    /* ---- Report header ---- */
+    .rp-report-header {
       background: var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 28px 32px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
       box-shadow: 0 1px 3px var(--shadow-sm);
-      overflow: hidden;
       transition: background .2s, border-color .2s;
     }
-    /* Markdown styles */
-    #full-report-body h1 { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
-    #full-report-body h2 { font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-    #full-report-body h3 { font-size: 14px; font-weight: 700; color: var(--text-body); margin: 16px 0 6px; }
-    #full-report-body p { font-size: 14px; color: var(--text-body); line-height: 1.7; margin-bottom: 10px; }
-    #full-report-body strong { color: var(--text-primary); }
-    #full-report-body ul, #full-report-body ol { padding-left: 20px; margin-bottom: 10px; }
-    #full-report-body li { font-size: 14px; color: var(--text-body); line-height: 1.7; margin-bottom: 3px; }
-    #full-report-body hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
-    #full-report-body table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; }
-    #full-report-body th { background: var(--bg-bar); font-weight: 600; color: var(--text-muted); text-align: left; padding: 8px 12px; border: 1px solid var(--border); }
-    #full-report-body td { padding: 7px 12px; border: 1px solid var(--border); color: var(--text-body); }
-    #full-report-body td:nth-child(2), #full-report-body td:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; }
-    #full-report-body a { color: #6366f1; text-decoration: none; }
-    #full-report-body a:hover { text-decoration: underline; }
+    .rp-report-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .rp-report-meta { display: flex; flex-direction: column; gap: 3px; }
+    .rp-report-meta span { font-size: 13px; color: var(--text-muted); }
+    .rp-report-meta strong { color: var(--text-body); }
+
+    /* ---- Section group label ---- */
+    .rp-section-group-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--text-subtle);
+      text-transform: uppercase; letter-spacing: .8px;
+      margin: 20px 0 10px;
+    }
+    .rp-section-group-label:first-of-type { margin-top: 0; }
+
+    /* ---- Perspective block ---- */
+    .rp-block {
+      border: 1px solid color-mix(in srgb, var(--rp-color) 28%, var(--border));
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      background: var(--bg-surface);
+      box-shadow: 0 1px 4px var(--shadow-sm);
+      transition: background .2s, border-color .2s;
+    }
+    .rp-block:last-of-type { margin-bottom: 0; }
+    .rp-header { display: flex; align-items: stretch; border-bottom: 1px solid color-mix(in srgb, var(--rp-color) 18%, var(--border)); }
+    .rp-accent { width: 4px; background: var(--rp-color); flex-shrink: 0; }
+    .rp-meta {
+      flex: 1; padding: 13px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: color-mix(in srgb, var(--rp-color) 5%, var(--bg-surface));
+    }
+    .rp-persona { font-size: 13px; font-weight: 700; color: var(--rp-color); text-transform: uppercase; letter-spacing: .5px; }
+    .rp-conf { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--rp-color); }
+    .rp-conf-bar { width: 64px; height: 5px; background: color-mix(in srgb, var(--rp-color) 18%, var(--border)); border-radius: 99px; overflow: hidden; }
+    .rp-conf-fill { height: 100%; border-radius: 99px; background: var(--rp-color); transition: width .4s ease; }
+    .rp-body { padding: 18px 22px 20px; }
+    .rp-hypothesis {
+      font-size: 14px; font-weight: 600; color: var(--text-primary);
+      line-height: 1.65; margin-bottom: 14px;
+      padding: 10px 14px;
+      background: color-mix(in srgb, var(--rp-color) 5%, var(--bg-surface));
+      border-left: 3px solid var(--rp-color);
+      border-radius: 0 8px 8px 0;
+    }
+    .rp-section { margin-bottom: 14px; }
+    .rp-section-label { font-size: 11px; font-weight: 700; color: var(--rp-color); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 5px; }
+    .rp-section-text { font-size: 13px; color: var(--text-body); line-height: 1.65; }
+    .rp-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
+    .rp-col-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+    .rp-col-evidence .rp-col-label { color: #10b981; }
+    .rp-col-counter .rp-col-label { color: #f59e0b; }
+    .rp-col ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+    .rp-col-evidence li::before { content: '↳ '; color: #10b981; font-weight: 700; }
+    .rp-col-counter li::before { content: '↳ '; color: #f59e0b; font-weight: 700; }
+    .rp-col li { font-size: 13px; color: var(--text-body); line-height: 1.6; }
+
+    /* ---- Overall confidence ---- */
+    .rp-overall {
+      background: var(--bg-bar);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin-top: 4px;
+      margin-bottom: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background .2s, border-color .2s;
+    }
+    .rp-overall-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 2px; }
+    .rp-overall-sub { font-size: 12px; color: var(--text-subtle); }
+    .rp-overall-score { font-size: 28px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+    /* ---- Repos table ---- */
+    .rp-table-wrap { overflow-x: auto; }
+    .rp-table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .rp-table th { background: var(--bg-bar); font-weight: 600; color: var(--text-muted); text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+    .rp-table td { padding: 8px 14px; border-bottom: 1px solid var(--border); color: var(--text-body); vertical-align: middle; }
+    .rp-table tr:last-child td { border-bottom: none; }
+    .rp-table td:nth-child(2) { text-align: right; font-variant-numeric: tabular-nums; }
+    .rp-table td:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .rp-table a { color: #6366f1; text-decoration: none; }
+    .rp-table a:hover { text-decoration: underline; }
+    .rp-vel-pos { color: #10b981; }
+    .rp-vel-neg { color: #ef4444; }
 
     /* ---- Skip link ---- */
     .skip-link {
@@ -1021,61 +1187,132 @@
         </div>
       </div>
 
-      <p class="section-heading">Analyst perspectives</p>
-      <div id="tab-bar" role="tablist">
-        <button class="pill-tab" id="tab-vc" role="tab" aria-selected="true"
-          data-persona="vc_analyst" style="--tcolor:#6366f1">
-          <span class="tab-icon">💼</span> VC Analyst
-        </button>
-        <button class="pill-tab" id="tab-dev" role="tab" aria-selected="false"
-          data-persona="developer_analyst" style="--tcolor:#10b981">
-          <span class="tab-icon">💻</span> Developer
-        </button>
-        <button class="pill-tab" id="tab-journalist" role="tab" aria-selected="false"
-          data-persona="journalist" style="--tcolor:#f59e0b">
-          <span class="tab-icon">📰</span> Journalist
-        </button>
-      </div>
-
-      <div id="result-card" role="tabpanel">
-        <div class="result-card-header">
-          <div class="persona-label-tag">
-            <div class="tag-dot" id="persona-dot"></div>
-            <span id="persona-name-tag"></span>
+      <div class="carousel-header">
+        <p class="section-heading" style="margin:0">Analyst perspectives</p>
+        <div class="carousel-controls">
+          <button class="carousel-arrow" id="carousel-prev" aria-label="Previous analyst">
+            <svg class="icon-sm" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="carousel-dots" role="tablist" aria-label="Analyst selector">
+            <button class="carousel-dot active" data-idx="0" role="tab" aria-selected="true" aria-label="VC Analyst"></button>
+            <button class="carousel-dot" data-idx="1" role="tab" aria-selected="false" aria-label="Developer"></button>
+            <button class="carousel-dot" data-idx="2" role="tab" aria-selected="false" aria-label="Journalist"></button>
           </div>
-          <div class="confidence-pill">
-            <div class="conf-bar-wrap">
-              <div class="conf-bar-fill" id="conf-bar-fill" style="width:0%"></div>
-            </div>
-            <span id="conf-pct"></span>
-          </div>
+          <button class="carousel-arrow" id="carousel-next" aria-label="Next analyst">
+            <svg class="icon-sm" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
-        <div class="result-card-body">
-          <div id="hypothesis-text"></div>
-          <div id="confidence-rating"></div>
-          <div id="evidence-section">
-            <button id="evidence-toggle" aria-expanded="false" aria-controls="evidence-list">
-              <span>📋</span> Show evidence & counter-evidence
-            </button>
-            <div id="evidence-list">
-              <h3>Supporting evidence</h3>
-              <ol id="evidence-items"></ol>
-              <h3>Counter-evidence</h3>
-              <ol id="counter-items"></ol>
-              <div id="sources-section" style="display:none">
-                <h3>Sources</h3>
-                <ul id="sources-items"></ul>
+      </div>
+      <div class="carousel-viewport">
+        <div class="carousel-track" id="carousel-track">
+
+          <!-- VC Analyst -->
+          <div class="analyst-card" data-persona="vc_analyst">
+            <div class="result-card-header">
+              <div class="persona-label-tag">
+                <div class="tag-dot" style="background:#6366f1"></div>
+                <span>VC Analyst</span>
+              </div>
+              <div class="confidence-pill">
+                <div class="conf-bar-wrap"><div class="conf-bar-fill" style="width:0%;background:#6366f1"></div></div>
+                <span class="conf-pct-text">—</span>
+              </div>
+            </div>
+            <div class="result-card-body">
+              <div class="hypothesis-text"></div>
+              <div class="evidence-section">
+                <button class="evidence-toggle-btn" aria-expanded="false">
+                  <svg class="icon-sm" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+                  Show evidence &amp; counter-evidence
+                </button>
+                <div class="evidence-list" style="display:none">
+                  <h3>Supporting evidence</h3>
+                  <ol class="evidence-items"></ol>
+                  <h3>Counter-evidence</h3>
+                  <ol class="counter-items"></ol>
+                  <div class="sources-section" style="display:none"><h3>Sources</h3><ul class="sources-items"></ul></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+
+          <!-- Developer Analyst -->
+          <div class="analyst-card" data-persona="developer_analyst">
+            <div class="result-card-header">
+              <div class="persona-label-tag">
+                <div class="tag-dot" style="background:#10b981"></div>
+                <span>Developer</span>
+              </div>
+              <div class="confidence-pill">
+                <div class="conf-bar-wrap"><div class="conf-bar-fill" style="width:0%;background:#10b981"></div></div>
+                <span class="conf-pct-text">—</span>
+              </div>
+            </div>
+            <div class="result-card-body">
+              <div class="hypothesis-text"></div>
+              <div class="evidence-section">
+                <button class="evidence-toggle-btn" aria-expanded="false">
+                  <svg class="icon-sm" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+                  Show evidence &amp; counter-evidence
+                </button>
+                <div class="evidence-list" style="display:none">
+                  <h3>Supporting evidence</h3>
+                  <ol class="evidence-items"></ol>
+                  <h3>Counter-evidence</h3>
+                  <ol class="counter-items"></ol>
+                  <div class="sources-section" style="display:none"><h3>Sources</h3><ul class="sources-items"></ul></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Journalist -->
+          <div class="analyst-card" data-persona="journalist">
+            <div class="result-card-header">
+              <div class="persona-label-tag">
+                <div class="tag-dot" style="background:#f59e0b"></div>
+                <span>Journalist</span>
+              </div>
+              <div class="confidence-pill">
+                <div class="conf-bar-wrap"><div class="conf-bar-fill" style="width:0%;background:#f59e0b"></div></div>
+                <span class="conf-pct-text">—</span>
+              </div>
+            </div>
+            <div class="result-card-body">
+              <div class="hypothesis-text"></div>
+              <div class="evidence-section">
+                <button class="evidence-toggle-btn" aria-expanded="false">
+                  <svg class="icon-sm" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+                  Show evidence &amp; counter-evidence
+                </button>
+                <div class="evidence-list" style="display:none">
+                  <h3>Supporting evidence</h3>
+                  <ol class="evidence-items"></ol>
+                  <h3>Counter-evidence</h3>
+                  <ol class="counter-items"></ol>
+                  <div class="sources-section" style="display:none"><h3>Sources</h3><ul class="sources-items"></ul></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /carousel-track -->
+      </div><!-- /carousel-viewport -->
     </section>
 
     <!-- Top Repos Cards -->
     <section id="top-repos-panel">
       <p class="section-heading" style="margin-top:8px">Top repositories</p>
       <div id="repos-grid"></div>
+    </section>
+
+    <!-- Full Report -->
+    <section id="full-report-panel">
+      <div class="report-panel-header">
+        <p class="section-heading" style="margin:0">Full scout report</p>
+        <button id="report-toggle-btn">Collapse ▲</button>
+      </div>
+      <div id="full-report-body"></div>
     </section>
 
     <!-- Charts -->
@@ -1106,15 +1343,6 @@
       <p class="section-heading" style="margin-top:8px">Category velocity heatmap</p>
       <div class="chart-wrap"><canvas id="chart-heatmap"></canvas></div>
       <p class="chart-desc">Each cell shows a repo's star growth rate for a given topic tag. Green = growing fast, red = declining. Empty cells mean that repo isn't tagged with that topic.</p>
-    </section>
-
-    <!-- Full Report -->
-    <section id="full-report-panel">
-      <div class="report-panel-header">
-        <p class="section-heading" style="margin:0">Full scout report</p>
-        <button id="report-toggle-btn">Collapse ▲</button>
-      </div>
-      <div id="full-report-body"></div>
     </section>
 
     <!-- Downloads -->
@@ -1175,6 +1403,103 @@
     let currentPersona = 'vc_analyst';
     let lastQuery = '';
     let chartInstances = {};
+    let carouselIdx = 0;
+    const CAROUSEL_ORDER = ['vc_analyst', 'developer_analyst', 'journalist'];
+
+    // ---- Carousel ----
+    function goToSlide(idx) {
+      const total = CAROUSEL_ORDER.length;
+      carouselIdx = ((idx % total) + total) % total;
+      const track = document.getElementById('carousel-track');
+      if (track) track.style.transform = `translateX(-${carouselIdx * 100}%)`;
+      document.querySelectorAll('.carousel-dot').forEach((d, i) => {
+        d.classList.toggle('active', i === carouselIdx);
+        d.setAttribute('aria-selected', i === carouselIdx ? 'true' : 'false');
+      });
+      currentPersona = CAROUSEL_ORDER[carouselIdx];
+    }
+
+    function animateArrow(btn) {
+      btn.classList.remove('popping');
+      void btn.offsetWidth;
+      btn.classList.add('popping');
+    }
+
+    // ---- renderAnalystCards ----
+    function renderAnalystCards(report) {
+      document.querySelectorAll('.analyst-card').forEach(card => {
+        const persona = card.dataset.persona;
+        const meta = PERSONA_META[persona];
+        const hypothesis = (report.hypotheses || []).find(h => h.persona === persona);
+
+        const fill = card.querySelector('.conf-bar-fill');
+        const pct = Math.round(((hypothesis && hypothesis.confidence_score) || 0) * 100);
+        if (fill) fill.style.width = pct + '%';
+        const pctEl = card.querySelector('.conf-pct-text');
+        if (pctEl) pctEl.textContent = pct + '%';
+
+        const hypEl = card.querySelector('.hypothesis-text');
+        if (hypEl) hypEl.textContent = (hypothesis && hypothesis.hypothesis_text) || 'No hypothesis available for this persona.';
+
+        const evItems = card.querySelector('.evidence-items');
+        if (evItems) {
+          evItems.innerHTML = '';
+          ((hypothesis && hypothesis.evidence) || []).forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            evItems.appendChild(li);
+          });
+        }
+
+        const counterItems = card.querySelector('.counter-items');
+        if (counterItems) {
+          counterItems.innerHTML = '';
+          ((hypothesis && hypothesis.counter_evidence) || []).forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            counterItems.appendChild(li);
+          });
+        }
+
+        const sourcesSection = card.querySelector('.sources-section');
+        const sourcesItems = card.querySelector('.sources-items');
+        if (sourcesItems) sourcesItems.innerHTML = '';
+        const sources = ((hypothesis && hypothesis.sources) || []).filter(s => s && s.startsWith('http'));
+        if (sources.length && sourcesItems) {
+          sources.forEach(url => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.title = url;
+            const domain = url.replace(/^https?:\/\//, '').split('/')[0].replace(/^www\./, '');
+            const favicon = document.createElement('img');
+            favicon.className = 'favicon';
+            favicon.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+            favicon.alt = '';
+            favicon.onerror = () => { favicon.style.display = 'none'; };
+            a.appendChild(favicon);
+            a.appendChild(document.createTextNode(domain));
+            li.appendChild(a);
+            sourcesItems.appendChild(li);
+          });
+          if (sourcesSection) sourcesSection.style.display = 'block';
+        } else {
+          if (sourcesSection) sourcesSection.style.display = 'none';
+        }
+      });
+
+      // Wire evidence toggles (re-wire after each render)
+      document.querySelectorAll('.evidence-toggle-btn').forEach(btn => {
+        btn.onclick = function() {
+          const list = this.closest('.evidence-section').querySelector('.evidence-list');
+          const expanded = this.getAttribute('aria-expanded') === 'true';
+          list.style.display = expanded ? 'none' : 'block';
+          this.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+          // Update text node (last child)
+          const textNode = Array.from(this.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+          if (textNode) textNode.textContent = expanded ? '\n                  Show evidence & counter-evidence\n                ' : '\n                  Hide evidence & counter-evidence\n                ';
+        };
+      });
+    }
 
     const PERSONA_META = {
       vc_analyst:        { tabId: 'tab-vc',         cbId: 'cb-vc',         color: '#6366f1', name: 'VC Analyst' },
@@ -1195,8 +1520,7 @@
       const card = document.getElementById('pcard-' + key);
       cb.checked = !cb.checked;
       card.classList.toggle('selected', cb.checked);
-      // fire change event for tab visibility logic
-      cb.dispatchEvent(new Event('change'));
+      // Analyst cards in the carousel are always visible regardless of persona selection
     }
 
     // ---- Char counter ----
@@ -1506,43 +1830,126 @@
       }
     }
 
+    // ---- escapeHTML ----
+    function escapeHTML(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
     // ---- renderFullReport ----
+    const PERSONA_DISPLAY = {
+      vc_analyst:        { label: 'VC Analyst',  icon: '💼', color: '#6366f1', rgb: '99,102,241' },
+      developer_analyst: { label: 'Developer',   icon: '💻', color: '#10b981', rgb: '16,185,129' },
+      journalist:        { label: 'Journalist',  icon: '📰', color: '#f59e0b', rgb: '245,158,11'  },
+    };
+
     function renderFullReport(report) {
-      const lines = [
-        `# Scout Report`,
-        ``,
-        `**Query:** ${report.query}`,
-        `**Generated:** ${new Date(report.generated_at).toUTCString()}`,
-        ``,
-        `---`,
-        ``,
-        `## Analyst Perspectives`,
-        ``,
-      ];
+      const container = document.getElementById('full-report-body');
+      container.innerHTML = '';
+
+      // Header card
+      const header = document.createElement('div');
+      header.className = 'rp-report-header';
+      header.innerHTML = `
+        <div class="rp-report-title">Scout Report</div>
+        <div class="rp-report-meta">
+          <span><strong>Query:</strong> ${escapeHTML(report.query)}</span>
+          <span><strong>Generated:</strong> ${new Date(report.generated_at).toUTCString()}</span>
+        </div>`;
+      container.appendChild(header);
+
+      // Perspectives label
+      const perspLabel = document.createElement('div');
+      perspLabel.className = 'rp-section-group-label';
+      perspLabel.textContent = 'Analyst Perspectives';
+      container.appendChild(perspLabel);
+
+      // One colored block per analyst
       for (const h of (report.hypotheses || [])) {
-        const name = (h.persona || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        lines.push(`### ${name}`, ``);
-        lines.push(`**Confidence:** ${Math.round((h.confidence_score || 0) * 100)}%`, ``);
-        lines.push(`**Hypothesis:** ${h.hypothesis_text}`, ``);
-        lines.push(`**Reasoning:** ${h.reasoning}`, ``);
-        lines.push(`**Supporting Evidence:**`);
-        for (const e of (h.evidence || [])) lines.push(`- ${e}`);
-        lines.push(``, `**Counter-Evidence:**`);
-        for (const e of (h.counter_evidence || [])) lines.push(`- ${e}`);
-        lines.push(``);
+        const pd = PERSONA_DISPLAY[h.persona] || { label: h.persona, icon: '🔍', color: '#6366f1', rgb: '99,102,241' };
+        const pct = Math.round((h.confidence_score || 0) * 100);
+        const evHTML  = (h.evidence || []).map(e => `<li>${escapeHTML(e)}</li>`).join('');
+        const ctHTML  = (h.counter_evidence || []).map(e => `<li>${escapeHTML(e)}</li>`).join('');
+        const reasoning = h.reasoning ? `
+          <div class="rp-section">
+            <div class="rp-section-label">Reasoning</div>
+            <div class="rp-section-text">${escapeHTML(h.reasoning)}</div>
+          </div>` : '';
+
+        const block = document.createElement('div');
+        block.className = 'rp-block';
+        block.style.cssText = `--rp-color:${pd.color};--rp-rgb:${pd.rgb}`;
+        block.innerHTML = `
+          <div class="rp-header">
+            <div class="rp-accent"></div>
+            <div class="rp-meta">
+              <div class="rp-persona">${pd.icon} ${pd.label}</div>
+              <div class="rp-conf">
+                <div class="rp-conf-bar"><div class="rp-conf-fill" style="width:${pct}%"></div></div>
+                <span>${pct}% confidence</span>
+              </div>
+            </div>
+          </div>
+          <div class="rp-body">
+            <div class="rp-hypothesis">${escapeHTML(h.hypothesis_text)}</div>
+            ${reasoning}
+            <div class="rp-two-col">
+              <div class="rp-col rp-col-evidence">
+                <div class="rp-col-label">Supporting Evidence</div>
+                <ul>${evHTML || '<li style="opacity:.5">None listed</li>'}</ul>
+              </div>
+              <div class="rp-col rp-col-counter">
+                <div class="rp-col-label">Counter-Evidence</div>
+                <ul>${ctHTML || '<li style="opacity:.5">None listed</li>'}</ul>
+              </div>
+            </div>
+          </div>`;
+        container.appendChild(block);
       }
-      if (report.hypotheses && report.hypotheses.length) {
+
+      // Overall confidence
+      if ((report.hypotheses || []).length) {
         const overall = report.hypotheses.reduce((s, h) => s + (h.confidence_score || 0), 0) / report.hypotheses.length;
-        lines.push(`---`, ``, `## Overall Confidence Score`, ``, `**${Math.round(overall * 100)}%** (equal-weighted average across ${report.hypotheses.length} analysts)`, ``);
+        const ov = document.createElement('div');
+        ov.className = 'rp-overall';
+        ov.innerHTML = `
+          <div>
+            <div class="rp-overall-label">Overall Confidence</div>
+            <div class="rp-overall-sub">Equal-weighted across ${report.hypotheses.length} analysts</div>
+          </div>
+          <div class="rp-overall-score">${Math.round(overall * 100)}%</div>`;
+        container.appendChild(ov);
       }
-      lines.push(`---`, ``, `## Top Repositories`, ``, `| Repo | Stars | Growth Rate | Language |`, `| ---- | ----- | ----------- | -------- |`);
-      for (const r of (report.top_repos || [])) {
-        const vel = ((r.star_velocity || 0) * 100).toFixed(2);
-        const sign = r.star_velocity >= 0 ? '+' : '';
-        lines.push(`| [${r.name}](${r.url}) | ${(r.stars || 0).toLocaleString()} | ${sign}${vel}% | ${r.language || 'N/A'} |`);
+
+      // Top repos label + table
+      const repoLabel = document.createElement('div');
+      repoLabel.className = 'rp-section-group-label';
+      repoLabel.textContent = 'Top Repositories';
+      container.appendChild(repoLabel);
+
+      const tableWrap = document.createElement('div');
+      tableWrap.className = 'rp-table-wrap';
+      const repos = report.top_repos || [];
+      if (repos.length) {
+        const rows = repos.map(r => {
+          const vel = ((r.star_velocity || 0) * 100).toFixed(2);
+          const sign = r.star_velocity >= 0 ? '+' : '';
+          const cls = r.star_velocity >= 0 ? 'rp-vel-pos' : 'rp-vel-neg';
+          return `<tr>
+            <td><a href="${escapeHTML(r.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(r.name)}</a></td>
+            <td>${(r.stars || 0).toLocaleString()}</td>
+            <td class="${cls}">${sign}${vel}%</td>
+            <td>${escapeHTML(r.language || 'N/A')}</td>
+          </tr>`;
+        }).join('');
+        tableWrap.innerHTML = `
+          <table class="rp-table">
+            <thead><tr><th>Repo</th><th>Stars</th><th>30d Growth</th><th>Language</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      } else {
+        tableWrap.innerHTML = '<p style="color:var(--text-muted);font-size:14px">No repository data available.</p>';
       }
-      const md = lines.join('\n');
-      document.getElementById('full-report-body').innerHTML = marked.parse(md);
+      container.appendChild(tableWrap);
     }
 
     // ---- renderTopRepos ----
@@ -1581,23 +1988,12 @@
       renderFullReport(report);
       renderTopRepos(report);
 
-      // Show query in banner
       const qBanner = document.getElementById('result-query-text');
       if (qBanner) qBanner.textContent = lastQuery;
 
       renderCharts(report);
-
-      Object.entries(PERSONA_META).forEach(([key, meta]) => {
-        const cb = document.getElementById(meta.cbId);
-        const tab = document.getElementById(meta.tabId);
-        if (tab) tab.style.display = (cb && cb.checked) ? '' : 'none';
-      });
-
-      const firstChecked = Object.entries(PERSONA_META).find(([key, meta]) => {
-        const cb = document.getElementById(meta.cbId);
-        return cb && cb.checked;
-      });
-      if (firstChecked) switchTab(firstChecked[0]);
+      renderAnalystCards(report);
+      goToSlide(0);
     }
 
     // ---- runScout ----
@@ -1671,37 +2067,20 @@
         runScout();
       });
 
-      document.getElementById('evidence-toggle').addEventListener('click', function() {
-        const list = document.getElementById('evidence-list');
-        const expanded = this.getAttribute('aria-expanded') === 'true';
-        list.style.display = expanded ? 'none' : 'block';
-        this.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-        this.innerHTML = expanded
-          ? '<span>📋</span> Show evidence & counter-evidence'
-          : '<span>📋</span> Hide evidence & counter-evidence';
+      // Carousel arrows
+      const prevBtn = document.getElementById('carousel-prev');
+      const nextBtn = document.getElementById('carousel-next');
+      if (prevBtn) prevBtn.addEventListener('click', function() {
+        animateArrow(this);
+        goToSlide(carouselIdx - 1);
       });
-
-      document.querySelectorAll('.pill-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-          switchTab(this.dataset.persona);
-        });
+      if (nextBtn) nextBtn.addEventListener('click', function() {
+        animateArrow(this);
+        goToSlide(carouselIdx + 1);
       });
-
-      const cbPersonaMap = { 'cb-vc': 'vc_analyst', 'cb-dev': 'developer_analyst', 'cb-journalist': 'journalist' };
-      Object.entries(cbPersonaMap).forEach(([cbId, persona]) => {
-        const cb = document.getElementById(cbId);
-        if (!cb) return;
-        cb.addEventListener('change', function() {
-          const meta = PERSONA_META[persona];
-          const tab = document.getElementById(meta.tabId);
-          if (tab) tab.style.display = this.checked ? '' : 'none';
-          if (!this.checked && currentPersona === persona) {
-            const firstChecked = Object.entries(PERSONA_META).find(([k, m]) => {
-              const c = document.getElementById(m.cbId);
-              return c && c.checked;
-            });
-            if (firstChecked) switchTab(firstChecked[0]);
-          }
+      document.querySelectorAll('.carousel-dot').forEach(dot => {
+        dot.addEventListener('click', function() {
+          goToSlide(parseInt(this.dataset.idx, 10));
         });
       });
 
