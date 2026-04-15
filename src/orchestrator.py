@@ -13,7 +13,6 @@ import uuid
 from dotenv import load_dotenv
 load_dotenv()
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from google.adk.agents import SequentialAgent
 from google.adk.runners import InMemoryRunner
@@ -26,12 +25,12 @@ from google.genai import types
 # We must reuse these existing composites rather than re-wrapping the leaf agents.
 from src.agents.guardrail_agent import QueryRejectedError, check_query
 from src.agents.collection import collection_pipeline  # collection_parallel + critic_agent
-from src.agents.analysis import analysis_layer  # vc/dev/journalist analyst loops (ParallelAgent)
+from src.agents.analysis import analysis_layer, PERSONA_HYPOTHESIS_NAME
 from src.agents.synthesis_agent import (
+    synthesis_agent,
     build_synthesis_report_from_state,
     generate_scout_report_md,
     generate_top_repos_csv,
-    synthesis_agent,
 )
 from src.models.schemas import RepoData, SynthesisReport
 from src.visualization.charts import (
@@ -45,6 +44,9 @@ logger = logging.getLogger(__name__)
 
 # ProgressCallback type: async callable receiving (stage: str, status: str)
 ProgressCallback = Callable[[str, str], Awaitable[None]] | None
+
+# Valid short persona keys accepted from the frontend.
+ALL_PERSONAS: frozenset[str] = frozenset({"vc", "dev", "journalist"})
 
 # Build the pipeline agent once at module level (NOT per request — InMemoryRunner
 # initialization is expensive and per-request leaks sessions).
@@ -63,6 +65,7 @@ _runner = InMemoryRunner(agent=pipeline_agent, app_name="better-call-scout")
 async def run_pipeline(
     query: str,
     progress_cb: ProgressCallback = None,
+    personas: set[str] | None = None,
 ) -> SynthesisReport:
     """Run the full scout pipeline end-to-end for a given query.
 
@@ -71,9 +74,12 @@ async def run_pipeline(
         progress_cb: Optional async callback receiving (stage, status) strings.
             Called at the start and completion of each pipeline stage.
             Stages: "collection", "critic", "analysis", "synthesis".
+        personas: Set of short persona keys to run, e.g. {"vc", "dev"}.
+            Valid keys: "vc", "dev", "journalist".
+            Defaults to all three if None or empty.
 
     Returns:
-        SynthesisReport merging all three analyst hypotheses.
+        SynthesisReport merging the selected analyst hypotheses.
 
     Raises:
         ValueError: If any required analyst output key is missing from session state.
@@ -83,6 +89,14 @@ async def run_pipeline(
     query = query.strip()
     if len(query) > 500:
         query = query[:500]
+
+    # Normalize persona selection: validate keys and default to all three.
+    if not personas:
+        personas = set(ALL_PERSONAS)
+    else:
+        personas = {p for p in personas if p in ALL_PERSONAS}
+        if not personas:
+            personas = set(ALL_PERSONAS)
 
     # Guardrail: reject non-technical queries before launching the expensive pipeline.
     await check_query(query)
@@ -192,7 +206,19 @@ async def run_pipeline(
         else:
             repos_list = repos_raw if isinstance(repos_raw, list) else []
         repos = [RepoData.model_validate(r) for r in repos_list if isinstance(r, dict)]
-        report = build_synthesis_report_from_state(final_session.state, query, repos)
+        report = build_synthesis_report_from_state(final_session.state, query, repos, personas=personas)
+
+    # Filter hypotheses to only the selected personas.
+    # All analysts always run (single pipeline), but we drop unselected ones from the output.
+    if personas != set(ALL_PERSONAS):
+        allowed_names = {PERSONA_HYPOTHESIS_NAME[p] for p in personas}
+        report = report.model_copy(update={
+            "hypotheses": [h for h in report.hypotheses if h.persona in allowed_names]
+        })
+        logger.info(
+            "Persona filter applied | selected=%s remaining_hypotheses=%d",
+            personas, len(report.hypotheses),
+        )
 
     return report
 
@@ -235,4 +261,4 @@ async def generate_artifacts(report: SynthesisReport) -> dict[str, bytes | str]:
     }
 
 
-__all__ = ["run_pipeline", "generate_artifacts", "pipeline_agent", "QueryRejectedError"]
+__all__ = ["run_pipeline", "generate_artifacts", "QueryRejectedError", "ALL_PERSONAS"]

@@ -121,7 +121,7 @@ async def run_scout(req: RunRequest) -> dict:
 
 
 @app.get("/stream")
-async def stream_progress(request: Request, query: str) -> EventSourceResponse:
+async def stream_progress(request: Request, query: str, personas: str = "") -> EventSourceResponse:
     """Stream pipeline progress events via Server-Sent Events.
 
     IMPORTANT: EventSource only supports GET (browser standard).
@@ -151,7 +151,11 @@ async def stream_progress(request: Request, query: str) -> EventSourceResponse:
     if len(query) > 500:
         raise HTTPException(status_code=400, detail="Query must not exceed 500 characters")
 
-    logger.info("GET /stream — SSE connection opened | query=%r", query)
+    # Parse persona selection: comma-separated short keys e.g. "vc,dev"
+    _valid_keys = {"vc", "dev", "journalist"}
+    selected_personas: set[str] = {p.strip() for p in personas.split(",") if p.strip() in _valid_keys} if personas else set()
+
+    logger.info("GET /stream — SSE connection opened | query=%r personas=%s", query, selected_personas or "all")
 
     async def generator() -> AsyncGenerator[dict, None]:
         queue: asyncio.Queue[dict | None] = asyncio.Queue()
@@ -163,7 +167,7 @@ async def stream_progress(request: Request, query: str) -> EventSourceResponse:
         async def run() -> None:
             try:
                 report = await asyncio.wait_for(
-                    run_pipeline(query, progress_cb),
+                    run_pipeline(query, progress_cb, personas=selected_personas or None),
                     timeout=300.0,
                 )
                 # Store artifacts for download after SSE stream completes
