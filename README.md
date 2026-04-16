@@ -22,7 +22,7 @@ A multi-agent VC/startup scout that performs the full data analyst lifecycle —
 
 ## Live Demo
 
-**Deployed URL:** _[Cloud Run link here]_
+**Deployed URL:** [Live Link](https://better-call-scout-419544807514.us-east1.run.app/)
 
 Enter any tech-focused query (e.g. *"What AI inference frameworks are gaining momentum?"*) and the system will collect live data, run three analyst agents in parallel, and return a synthesized hypothesis with charts and downloadable artifacts.
 
